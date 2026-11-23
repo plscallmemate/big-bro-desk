@@ -1,0 +1,1456 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="dark light">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<title>Big Bro Desk</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Archivo+Black&display=swap">
+<style>
+/* Layout concept: one narrow column like a Telegram mini-app. Dark-first "label desk": near-black ground, one acid-lime accent, wide display type for numbers and names, gradient avatars, a floating dock with a sliding pill. Motion: staggered list entry, count-up numbers, line-draw charts, equalizer bars while busy. */
+:root {
+  --bg: #0C0C0F;
+  --surface: #15151A;
+  --surface2: #1E1E25;
+  --ink: #F2EFE9;
+  --muted: #8F8D99;
+  --line: #262630;
+  --accent: #F0401F;
+  --accent-ink: #FFFFFF;
+  --accent-t: #FF6A4D;
+  --warn: #FFB454;
+  --bad: #FF7070;
+  --c-write: #8F8D99;
+  --c-dialog: #F2B84B;
+  --c-call: #A294FF;
+  --c-meet: #4DE3A6;
+  --c-signed: #F2EFE9;
+  --c-none: #6B6A75;
+  --glow: rgba(255, 90, 60, .11);
+  --logo: url("data:image/png;base64,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");
+  --font-head: "Archivo Black", "Arial Black", "Inter", system-ui, sans-serif;
+  --font-body: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  color-scheme: dark;
+}
+@media (prefers-color-scheme: light) {
+  :root:not([data-theme="dark"]) {
+    --bg: #F3F0E9; --surface: #FFFFFF; --surface2: #ECE8DF; --ink: #14131A; --muted: #6B6875; --line: #DDD8CC;
+    --accent: #F0401F; --accent-ink: #FFFFFF; --accent-t: #C42D12; --warn: #A86500; --bad: #C62828;
+    --c-write: #6B6875; --c-dialog: #A86B00; --c-call: #6246E0; --c-meet: #0E8F5E; --c-signed: #14131A; --c-none: #8A8794;
+    --glow: rgba(240, 64, 31, .10);
+    color-scheme: light;
+  }
+}
+:root[data-theme="light"] {
+  --bg: #F3F0E9; --surface: #FFFFFF; --surface2: #ECE8DF; --ink: #14131A; --muted: #6B6875; --line: #DDD8CC;
+  --accent: #F0401F; --accent-ink: #FFFFFF; --accent-t: #C42D12; --warn: #A86500; --bad: #C62828;
+  --c-write: #6B6875; --c-dialog: #A86B00; --c-call: #6246E0; --c-meet: #0E8F5E; --c-signed: #14131A; --c-none: #8A8794;
+  --glow: rgba(240, 64, 31, .10);
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; }
+body {
+  background-color: var(--bg);
+  background-image: radial-gradient(760px 380px at 85% -120px, var(--glow), transparent 70%);
+  background-repeat: no-repeat;
+  color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.45;
+  padding-block: 0 120px;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  font-variant-numeric: tabular-nums;
+}
+body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 10; background: var(--bg); }
+body::after {
+  content: ""; position: fixed; inset: 0; z-index: 1; pointer-events: none; opacity: .05;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+}
+.wrap { max-width: 520px; margin: 0 auto; position: relative; z-index: 2; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button { cursor: pointer; }
+button:disabled { opacity: .55; cursor: default; }
+:focus-visible { outline: 2px solid var(--accent-t); outline-offset: 2px; }
+
+@keyframes rise { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: none; } }
+@keyframes slide { from { opacity: 0; transform: translateX(28px); } to { opacity: 1; transform: none; } }
+@keyframes draw { to { stroke-dashoffset: 0; } }
+@keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+@keyframes avpop { 0% { transform: scale(.6); opacity: 0; } 65% { transform: scale(1.06); opacity: 1; } 100% { transform: scale(1); opacity: 1; } }
+@keyframes pop { 0% { transform: scale(0); } 70% { transform: scale(1.5); } 100% { transform: scale(1); } }
+@keyframes pulse { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--c) 60%, transparent); } 100% { box-shadow: 0 0 0 8px transparent; } }
+@keyframes eq { 0%, 100% { transform: scaleY(.25); } 50% { transform: scaleY(1); } }
+@keyframes shimmer { to { background-position: -200% 0; } }
+@keyframes fly { to { transform: translate(var(--dx), var(--dy)) scale(.2); opacity: 0; } }
+@keyframes toastin { from { opacity: 0; transform: translate(-50%, 14px) scale(.96); } to { opacity: 1; transform: translate(-50%, 0) scale(1); } }
+#view.in-tab { animation: rise .38s cubic-bezier(.2, .8, .2, 1) both; }
+#view.in-card { animation: slide .4s cubic-bezier(.2, .8, .2, 1) both; }
+#view.in-tab .item, #view.in-card .item { animation: rise .45s cubic-bezier(.2, .8, .2, 1) both; animation-delay: calc(var(--i, 0) * 32ms); }
+
+header.top {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+  display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; padding: 16px 0 12px;
+}
+.brandrow { display: flex; align-items: center; gap: 10px; }
+.brand { font-family: var(--font-head); font-weight: 400; font-size: 19px; letter-spacing: -0.045em; text-transform: uppercase; margin: 0; }
+.sub { color: var(--muted); font-size: 13px; margin: 3px 0 0; }
+.logo { width: 36px; height: 36px; flex: none; background: var(--ink); -webkit-mask: var(--logo) center / contain no-repeat; mask: var(--logo) center / contain no-repeat; }
+@keyframes spin { to { transform: rotate(360deg); } }
+body.busy .logo { animation: spin 1.1s linear infinite; }
+.ghost { background: none; border: 1px solid var(--line); border-radius: 10px; padding: 7px 12px; font-size: 13px; color: var(--muted); transition: transform .12s, border-color .2s, color .2s; }
+.ghost:hover { color: var(--ink); border-color: var(--muted); }
+.ghost:active { transform: scale(.95); }
+
+.banner { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--warn); border-radius: 12px; padding: 10px 12px; font-size: 13px; margin: 4px 0 12px; display: flex; flex-direction: column; gap: 8px; align-items: flex-start; animation: rise .35s both; }
+.banner.demo { border-left-color: var(--c-call); }
+.banner.ok { border-left-color: var(--accent-t); }
+
+.hello { margin: 10px 0 22px; }
+.hello h2 { font-family: var(--font-head); font-size: 21px; font-weight: 400; letter-spacing: -0.04em; line-height: 1.2; margin: 0 0 8px; text-wrap: balance; }
+.hero-n { display: block; font-size: 72px; font-weight: 700; line-height: .95; letter-spacing: -0.05em; color: var(--accent-t); margin-bottom: 6px; }
+.hello p { margin: 0; color: var(--muted); }
+
+.block { margin: 0 0 22px; }
+.block > h3 { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); font-weight: 600; margin: 0 0 8px; display: flex; justify-content: space-between; }
+.list { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; overflow: hidden; }
+.item { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 2px 12px; align-items: center; width: 100%; text-align: left; background: none; border: 0; border-bottom: 1px solid var(--line); padding: 12px 14px; transition: background .2s, transform .12s; }
+.item:last-child { border-bottom: 0; }
+.item:hover { background: var(--surface2); }
+.item:active { transform: scale(.985); }
+.item .av { grid-row: 1 / span 2; }
+.item .nm { font-weight: 600; overflow-wrap: anywhere; grid-column: 2; }
+.item .ds { color: var(--muted); font-size: 13px; grid-column: 2; overflow-wrap: anywhere; }
+.item .mt { font-size: 13px; text-align: right; grid-row: 1 / span 2; grid-column: 3; color: var(--muted); }
+.mt.hot { color: var(--bad); font-weight: 600; }
+.mt.soon { color: var(--ink); font-weight: 600; }
+.more { width: 100%; background: var(--surface2); border: 0; border-top: 1px solid var(--line); padding: 12px; color: var(--accent-t); font-weight: 600; transition: background .2s; }
+.more:active { background: var(--line); }
+
+.av { width: 42px; height: 42px; border-radius: 14px; display: grid; place-items: center; overflow: hidden; flex: none; color: #0C0C0F; font-family: var(--font-head); font-weight: 400; font-size: 14px; letter-spacing: -0.04em; }
+.av img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.av.big { width: 76px; height: 76px; border-radius: 24px; font-size: 24px; animation: avpop .5s cubic-bezier(.2, .8, .2, 1) both; }
+
+.pill { --c: var(--c-none); display: inline-flex; align-items: center; gap: 6px; font-size: 12px; padding: 2px 10px; border-radius: 999px; background: color-mix(in srgb, var(--c) 16%, var(--surface)); border: 1px solid color-mix(in srgb, var(--c) 40%, var(--surface)); white-space: nowrap; }
+.pill::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--c); }
+.s-write { --c: var(--c-write); } .s-dialog { --c: var(--c-dialog); } .s-call { --c: var(--c-call); }
+.s-meet { --c: var(--c-meet); } .s-signed { --c: var(--c-signed); } .s-none { --c: var(--c-none); }
+.s-call::before, .s-meet::before { animation: pulse 1.6s ease-out infinite; }
+
+.tools { display: flex; flex-direction: column; gap: 10px; margin-bottom: 14px; }
+.search { width: 100%; padding: 12px 14px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface); transition: border-color .2s, box-shadow .2s; }
+.search:focus { outline: none; border-color: var(--accent-t); box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent-t) 22%, transparent); }
+.chips { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; scrollbar-width: none; }
+.chip { flex: none; background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 6px 13px; font-size: 13px; color: var(--muted); transition: transform .12s, background .2s, color .2s; }
+.chip:active { transform: scale(.94); }
+.chip[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+
+.back { background: none; border: 0; color: var(--accent-t); padding: 4px 0 12px; font-weight: 600; }
+.cardhead { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 16px; align-items: center; }
+.cardhead .av { grid-row: 1 / span 2; }
+.cardhead h2 { font-family: var(--font-head); font-size: 26px; font-weight: 400; letter-spacing: -0.05em; text-transform: uppercase; line-height: 1.02; margin: 0 0 6px; overflow-wrap: anywhere; grid-column: 2; align-self: end; }
+.cardhead .meta { color: var(--muted); font-size: 14px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; grid-column: 2; align-self: start; }
+.actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0; }
+.btn { display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none; padding: 11px 15px; border-radius: 13px; border: 1px solid var(--line); background: var(--surface); color: var(--ink); font-weight: 500; font-size: 14px; transition: transform .12s, box-shadow .25s, background .2s; }
+.btn:hover { background: var(--surface2); }
+.btn:active { transform: scale(.95); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.btn.primary:hover { background: var(--accent); box-shadow: 0 8px 26px -8px var(--accent); }
+.btn.sm { padding: 8px 12px; font-size: 13px; }
+.btn.bad { color: var(--bad); }
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 14px 16px; margin-bottom: 18px; }
+.panel .t { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); font-weight: 600; margin: 0 0 10px; }
+.panel .row { display: flex; flex-wrap: wrap; gap: 8px; }
+.facts { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 18px; overflow: hidden; margin-bottom: 18px; }
+.fact { background: var(--surface); padding: 11px 14px; min-width: 0; }
+.fact.wide { grid-column: 1 / -1; }
+.fact label, .fact .k { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+.fact input, .fact select { width: 100%; padding: 7px 9px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface2); min-width: 0; }
+.fact .v { overflow-wrap: anywhere; }
+.text h4 { font-size: 11px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin: 18px 0 6px; font-weight: 600; }
+.text p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+textarea.note { width: 100%; min-height: 80px; padding: 12px 14px; border-radius: 14px; border: 1px solid var(--line); background: var(--surface); margin-bottom: 8px; }
+textarea.note:focus { outline: none; border-color: var(--accent-t); }
+.hint { color: var(--muted); font-size: 12px; margin-top: 8px; }
+
+.metrics { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 16px; margin-bottom: 18px; }
+.metrics .row { display: flex; gap: 22px; flex-wrap: wrap; margin-bottom: 12px; }
+.big { font-family: var(--font-head); font-size: 26px; font-weight: 400; letter-spacing: -0.05em; line-height: 1.1; }
+.small { font-size: 12px; color: var(--muted); }
+.up { color: var(--c-meet); } .down { color: var(--bad); }
+.seg { display: inline-flex; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; margin-bottom: 8px; }
+.seg button { background: none; border: 0; padding: 6px 13px; font-size: 13px; color: var(--muted); transition: background .2s, color .2s; }
+.seg button[aria-pressed="true"] { background: var(--accent); color: var(--accent-ink); font-weight: 600; }
+.chart { width: 100%; height: auto; display: block; }
+.chart .grid { stroke: var(--line); stroke-width: 1; }
+.chart .lbl { fill: var(--muted); font-size: 10px; font-family: var(--font-body); }
+.chart .ln { fill: none; stroke: var(--ink); stroke-width: 2.2; stroke-linejoin: round; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; animation: draw 1.1s cubic-bezier(.4, 0, .2, 1) .1s forwards; }
+.chart .ar { fill: var(--ink); fill-opacity: 0.08; animation: fade 1s ease .5s both; }
+.chart .dot { fill: var(--accent-t); transform-box: fill-box; transform-origin: center; animation: pop .5s cubic-bezier(.3, 1.4, .5, 1) 1s both; }
+.chart .mk { stroke: var(--warn); stroke-dasharray: 3 3; stroke-width: 1; }
+.chart .mkl { fill: var(--warn); font-size: 10px; font-family: var(--font-body); }
+.spark { width: 84px; height: 28px; display: block; }
+.spark .ln { fill: none; stroke: var(--ink); stroke-width: 1.6; stroke-linecap: round; stroke-dasharray: 1; stroke-dashoffset: 1; animation: draw 1s ease-out .2s forwards; }
+
+nav.bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 6; pointer-events: none; padding: 0 max(16px, env(safe-area-inset-left, 0px)) calc(12px + env(safe-area-inset-bottom, 0px)) max(16px, env(safe-area-inset-right, 0px)); }
+nav.bar .in { pointer-events: auto; max-width: 520px; margin: 0 auto; position: relative; display: grid; grid-template-columns: repeat(4, 1fr); padding: 5px; background: color-mix(in srgb, var(--surface) 86%, transparent); backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px); border: 1px solid var(--line); border-radius: 22px; box-shadow: 0 12px 34px -12px rgba(0, 0, 0, .5); }
+nav.bar .ind { position: absolute; top: 5px; bottom: 5px; left: 5px; width: calc((100% - 10px) / 4); border-radius: 17px; background: var(--accent); transition: transform .5s cubic-bezier(.3, 1.35, .5, 1); }
+nav.bar button { position: relative; z-index: 1; background: none; border: 0; padding: 12px 2px; font-weight: 600; color: var(--muted); font-size: 13.5px; transition: color .25s, transform .12s; }
+nav.bar button:active { transform: scale(.93); }
+nav.bar button[aria-current="page"] { color: var(--accent-ink); }
+nav.bar .n { font-weight: 500; margin-left: 3px; font-size: 11.5px; opacity: .75; }
+
+.toast { position: fixed; left: 50%; transform: translateX(-50%); bottom: calc(92px + env(safe-area-inset-bottom, 0px)); z-index: 20; max-width: min(92vw, 480px); background: var(--ink); color: var(--bg); padding: 11px 16px; border-radius: 14px; font-size: 14px; font-weight: 500; box-shadow: 0 10px 34px rgba(0, 0, 0, .35); animation: toastin .3s cubic-bezier(.3, 1.3, .5, 1) both; }
+.toast.bad { background: var(--bad); color: #fff; }
+.burst { position: fixed; z-index: 30; pointer-events: none; width: 0; height: 0; }
+.burst i { position: absolute; left: -3px; top: -3px; width: 7px; height: 7px; border-radius: 50%; animation: fly .8s cubic-bezier(.2, .7, .3, 1) forwards; }
+
+.empty { color: var(--muted); padding: 32px 0; text-align: center; }
+.skel { height: 66px; border-radius: 18px; border: 1px solid var(--line); margin-bottom: 10px; background: linear-gradient(100deg, var(--surface) 30%, var(--surface2) 50%, var(--surface) 70%) 0 0 / 200% 100%; animation: shimmer 1.3s linear infinite; }
+@media (min-width: 700px) { body { padding-top: 12px; } }
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-delay: 0ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+  .chart .ln, .spark .ln { stroke-dashoffset: 0; }
+}
+.tform { background: var(--surface); border: 1px solid var(--line); border-radius: 18px; padding: 14px; margin-bottom: 22px; display: flex; flex-direction: column; gap: 10px; }
+.tform .search { background: var(--surface2); }
+.tform .line { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.tform .seg { margin: 0; }
+.dline { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-top: 6px; }
+.dline b { font-weight: 600; }
+.dline b.dl { color: var(--ink); }
+.tipwrap { position: relative; display: inline-flex; }
+.q { width: 20px; height: 20px; border-radius: 50%; border: 1px solid var(--line); background: none; color: var(--muted); font-size: 12px; line-height: 1; padding: 0; display: grid; place-items: center; }
+.q { position: relative; }
+.q::after { content: ""; position: absolute; inset: -12px; }
+.q:hover { color: var(--ink); border-color: var(--muted); }
+.pop { position: absolute; left: -6px; top: 28px; z-index: 20; width: min(260px, 70vw); background: var(--ink); color: var(--bg); border-radius: 12px; padding: 10px 12px; font-size: 12.5px; line-height: 1.4; box-shadow: 0 10px 30px -10px rgba(0,0,0,.5); animation: rise .2s ease both; }
+.dline .mini-in { width: 130px; }
+.tform .line .search { flex: 1 1 90px; min-width: 0; }
+.mini-in { padding: 9px 11px; border-radius: 11px; border: 1px solid var(--line); background: var(--surface2); min-width: 0; }
+.mini-in.wide { flex: 1 1 170px; }
+.task { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; gap: 12px; align-items: center; padding: 12px 14px; border-bottom: 1px solid var(--line); }
+.task:last-child { border-bottom: 0; }
+.tb { min-width: 0; }
+.tt { font-weight: 500; overflow-wrap: anywhere; transition: color .25s; }
+.task.done .tt { color: var(--muted); text-decoration: line-through; text-decoration-thickness: 2px; }
+.tm { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 4px; font-size: 12px; color: var(--muted); }
+.tag-time { background: var(--ink); color: var(--bg); padding: 1px 8px; border-radius: 7px; font-weight: 600; }
+.tag-all { border: 1px dashed var(--muted); padding: 0 8px; border-radius: 7px; }
+.late { color: var(--bad); font-weight: 600; }
+.tag-art { background: none; border: 0; padding: 0; color: var(--accent-t); font: inherit; font-size: 12px; font-weight: 600; }
+.tact { display: flex; gap: 6px; align-items: center; }
+.mini { background: none; border: 1px solid var(--line); border-radius: 9px; padding: 5px 9px; font-size: 12px; color: var(--muted); transition: transform .12s, color .2s, border-color .2s; }
+.mini:hover { color: var(--ink); border-color: var(--muted); }
+.mini:active { transform: scale(.94); }
+.mini.x:hover { color: var(--bad); border-color: var(--bad); }
+.chk { width: 28px; height: 28px; border-radius: 50%; border: 2px solid var(--muted); background: none; display: grid; place-items: center; padding: 0; transition: background .2s, border-color .2s, transform .18s cubic-bezier(.3, 1.5, .5, 1); }
+.chk:active { transform: scale(.82); }
+.chk.on { background: var(--accent); border-color: var(--accent); }
+.chk .ckw { width: 18px; height: 18px; }
+.chk .ck { fill: none; stroke: var(--accent-ink); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset .3s ease .05s; }
+.chk.on .ck { stroke-dashoffset: 0; }
+.prog { height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; margin: 0 0 10px; }
+.prog i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 2px; transition: width .8s cubic-bezier(.2, .8, .2, 1); }
+#view.in-tab .task, #view.in-card .task { animation: rise .45s cubic-bezier(.2, .8, .2, 1) both; animation-delay: calc(var(--i, 0) * 32ms); }
+nav.bar .in { grid-template-columns: repeat(5, 1fr); }
+nav.bar .ind { width: calc((100% - 10px) / 5); }
+nav.bar button { font-size: 12.5px; padding: 12px 0; }
+#n-artists, #n-mine { display: none; }
+</style>
+
+<style>[hidden]{display:none!important}img{max-width:100%}</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="brandrow"><div class="logo" role="img" aria-label="Big Bro Rec"></div><h1 class="brand">Big Bro Desk</h1></div>
+      <p class="sub" id="datestr"></p>
+    </div>
+    <button class="ghost" id="refresh" type="button">Обновить</button>
+  </header>
+  <div id="notice"></div>
+  <main id="view"></main>
+</div>
+<div id="toast" class="toast" hidden role="status"></div>
+<nav class="bar" aria-label="Разделы"><div class="in"><span class="ind" id="ind"></span>
+  <button type="button" data-tab="today" id="tab-today">Сегодня</button>
+  <button type="button" data-tab="tasks" id="tab-tasks">Задачи<span class="n" id="n-tasks"></span></button>
+  <button type="button" data-tab="artists" id="tab-artists">Артисты<span class="n" id="n-artists"></span></button>
+  <button type="button" data-tab="search" id="tab-search">Поиск<span class="n" id="n-search"></span></button>
+  <button type="button" data-tab="mine" id="tab-mine">Мои<span class="n" id="n-mine"></span></button>
+</div></nav>
+
+<script>
+(function () {
+  "use strict";
+  var SHEET_ID = "";
+  var SERVER = "Google Sheets";
+  var GID_S = 1000003;   // sheetId of Поиск
+  var GID_T = 1000004;   // sheetId of the Задачи tab
+  var GID_A = 1000001;   // sheetId of the Artists tab, needed to delete a row
+  var TAB_A = "Artists", TAB_S = "Поиск", TAB_T = "Задачи";
+  var RESP_DEFAULT = "Саша";
+  var OWNERS = ["Саша", "Ваня", "Коля", "Никита"];   // replaced by Списки!B on load; new names can be added from the form
+  function ownersAll() {
+    var out = OWNERS.slice();
+    rowsA.forEach(function (a) { if (a.resp && out.indexOf(a.resp) < 0) out.push(a.resp); });
+    rowsS.forEach(function (c) { if (c.finder && out.indexOf(c.finder) < 0) out.push(c.finder); });
+    return out;
+  }
+  function rememberOwner(name) {
+    if (!name || OWNERS.indexOf(name) >= 0) return;
+    OWNERS.push(name);
+    if (!live) return;
+    readRange("Списки!B1:B60").then(function (v) {
+      v = v || []; var last = 1;
+      for (var i = 1; i < v.length; i++) if (String(v[i] && v[i][0] || "").trim()) last = i + 1;
+      return call("update_values", { spreadsheetId: SHEET_ID, range: "Списки!B" + (last + 1), values: [[name]] });
+    }).then(null, function () {});
+  }
+  var own = "Все";   // owner filter shared by the Artists and Search lists
+  var DAY = 864e5;
+  var TODAY = (function () { var d = new Date(); d.setHours(0, 0, 0, 0); return d; })();
+  var STATUSES = ["Не написал", "Написал", "Был диалог", "Созвон", "Был созвон", "Встреча", "Была встреча", "Подписан", "Отказ"];
+  var HELD = { "Был созвон": 1, "Была встреча": 1, "Был диалог": 1 };
+  var TAGS = ["молчит", "всё устраивает", "не интересно", "экс / долг", "своя команда", "с лейблом", "дорого", "ушёл к другим", "держим связь", "в переговорах"];
+  var DECISIONS = ["Смотрю", "Пишем", "Не берём"];
+  var STKEY = { "Написал": "write", "Был диалог": "dialog", "Созвон": "call", "Был созвон": "call", "Встреча": "meet", "Была встреча": "meet", "Подписан": "signed", "Не написал": "none", "Отказ": "none" };
+  var STRANK = { "Встреча": 0, "Созвон": 1, "Была встреча": 2, "Был созвон": 3, "Был диалог": 4, "Написал": 5, "Не написал": 6, "Подписан": 7, "Отказ": 8 };
+
+  // column headers in the sheet. Columns are found by these names, so moving or inserting columns in the sheet does not break the app.
+  var HA = { name: "Артист", resp: "Ответственный", status: "Статус", first: "Дата первого касания", next: "Следующее касание", meet: "Созвон/встреча (дата и время)", who: "Кто на связи", tg: "ТГ", ig: "Инст", vk: "ВК", mail: "Почта", chan: "Основной канал", extra: "Доп. контакты", label: "Текущий лейбл", tag: "Тег (причина/итог)", offer: "Оффер", debt: "Долг треков", drop: "Дата последнего дропа", last: "Последний контакт", comment: "Коммент", log: "Лог касаний", why: "Чем интересен", problem: "Текущая проблема", propose: "Что можем предложить", known: "Что известно сейчас", ym: "Ссылка ЯМ", photo: "Фото", delta: "Дельта (мес.)" };
+  var HS = { date: "Дата находки", name: "Артист", drop: "Ласт дроп дист", ym: "ЯМ", ig: "Инст", tt: "ТТ", tg: "ТГ", listeners: "Слушатели", likes: "Лайки", ratio: "Лайки/слуш", delta: "Дельта", igf: "Инст подп", ttf: "ТТ подп", tgf: "ТГ подп", found: "FOUND", comment: "Коммент", dyn: "Динамика", decision: "Решение", photo: "Фото", finder: "Кто нашёл" };
+  var HT = { id: "ID", text: "Задача", date: "Дата", time: "Время", artist: "Артист", done: "Готово", created: "Создано" };
+
+  // sample data, used only when the sheet cannot be read
+  var SAMPLE_A = [
+    { name: "NICK DAYZI", resp: "Саша", status: "Встреча", first: "18.11.2026", next: "23.11.2026", who: "Артист", tg: "@NickDayzi", chan: "ТГ", label: "Студия СОЮЗ", comment: "Ждём встречи на следующей неделе" },
+    { name: "boneyblaze", resp: "Саша", status: "Был диалог", first: "26.10.2026", who: "Артист", tg: "@boneyblaze", chan: "ТГ", extra: "Вася - @boneyblaze", label: "Legacy Music", tag: "экс / долг", debt: "6", last: "27.10.2026", comment: "Отдаёт долг 6 треков на Legacy" },
+    { name: "skibaxter", resp: "Саша", status: "Подписан", first: "09.07.2026", who: "Артист", tg: "@skibaxtter", ig: "https://www.instagram.com/skibaxterrr/", chan: "Инст", label: "MDMB / A+", last: "15.11.2026", comment: "Дропает альбом" },
+    { name: "kartman", resp: "Саша", status: "Написал", first: "05.11.2026", who: "Артист", ig: "https://www.instagram.com/tgk_kartman/", chan: "Инст", tag: "молчит" }
+  ];
+  var SAMPLE_S = [
+    { date: "17.11.2026", name: "Yung Leo", drop: "gosilk", ym: "https://music.yandex.ru/artist/5034683", listeners: "48 120", likes: "2 310", comment: "" },
+    { date: "17.11.2026", name: "LAMAI", drop: "Loud Boyz", ym: "https://music.yandex.ru/artist/21079152", listeners: "9 800", likes: "640", decision: "Смотрю" },
+    { date: "05.06.2026", name: "BLESSQ", ym: "https://music.yandex.ru/artist/12435311", listeners: "131 098", likes: "3 325", tt: "https://www.tiktok.com/@goddidblessq", found: "TikTok" }
+  ];
+
+  function SAMPLE_T() {
+    return [
+      { id: "s1", text: "Созвониться с NICK DAYZI", date: fmtFull(TODAY), time: "15:00", artist: "NICK DAYZI" },
+      { id: "s2", text: "Разобрать новые находки", date: fmtFull(TODAY), time: "" },
+      { id: "s3", text: "Скинуть оффер", date: fmtFull(addDays(TODAY, -1)), time: "", artist: "boneyblaze" }
+    ];
+  }
+  var rowsA = [], colA = {};     // artists + header->column index
+  var rowsS = [], colS = {};     // found candidates
+  var rowsT = [], colT = {};     // tasks
+  var live = false;              // true when data came from the sheet
+  var mcpH = null;
+  var loaded = false;
+  var lastTab = "today";
+
+  // ---------- helpers ----------
+  function el(tag, props) {
+    var n = document.createElement(tag);
+    if (props) Object.keys(props).forEach(function (k) {
+      var v = props[k];
+      if (k === "class") n.className = v;
+      else if (k === "text") n.textContent = v;
+      else if (k.indexOf("on") === 0) n.addEventListener(k.slice(2), v);
+      else if (v === true) n.setAttribute(k, "");
+      else if (v !== false && v != null) n.setAttribute(k, v);
+    });
+    for (var i = 2; i < arguments.length; i++) {
+      var c = arguments[i];
+      if (Array.isArray(c)) c.forEach(function (x) { if (x != null && x !== false) n.append(x.nodeType ? x : document.createTextNode(x)); });
+      else if (c != null && c !== false) n.append(c.nodeType ? c : document.createTextNode(c));
+    }
+    return n;
+  }
+  function pd(s) {
+    if (!s) return null;
+    var m = String(s).trim().match(/^(\d{1,2})\.(\d{1,2})\.(\d{2,4})/);
+    if (!m) return null;
+    var y = +m[3]; if (y < 100) y += 2000;
+    var d = new Date(y, +m[2] - 1, +m[1]);
+    return isNaN(d.getTime()) ? null : d;
+  }
+  function dd(a, b) { return Math.round((a - b) / DAY); }
+  function two(n) { return (n < 10 ? "0" : "") + n; }
+  function fmtShort(d) { return two(d.getDate()) + "." + two(d.getMonth() + 1); }
+  function fmtFull(d) { return two(d.getDate()) + "." + two(d.getMonth() + 1) + "." + d.getFullYear(); }
+  function toIso(d) { return d.getFullYear() + "-" + two(d.getMonth() + 1) + "-" + two(d.getDate()); }
+  function fromIso(s) { var m = String(s).match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? m[3] + "." + m[2] + "." + m[1] : ""; }
+  function addDays(d, n) { return new Date(d.getTime() + n * DAY); }
+  function plural(n, a, b, c) { var m = n % 100, k = n % 10; if (m > 10 && m < 20) return c; if (k === 1) return a; if (k > 1 && k < 5) return b; return c; }
+  function days(n) { return n + " " + plural(n, "день", "дня", "дней"); }
+  function num(n) { return Math.round(n).toLocaleString("ru-RU"); }
+  function pnum(s) { var d = String(s == null ? "" : s).replace(/[^\d]/g, ""); return d ? parseInt(d, 10) : null; }
+  // monthly listeners change as shown by Yandex: "+12 345", "-800", "1200"
+  function parseDelta(v) {
+    var t = String(v == null ? "" : v).replace(/[\s\u00a0]/g, "").replace(",", ".").replace(/[\u2212\u2013\u2014]/g, "-");
+    return /^[+-]?\d+(\.\d+)?$/.test(t) ? parseFloat(t) : null;
+  }
+  function deltaText(v) { var n = parseDelta(v); return n == null ? String(v || "") : (n > 0 ? "+" : n < 0 ? "−" : "") + num(Math.abs(n)); }
+  function deltaCls(v) { var n = parseDelta(v); return n > 0 ? "up" : n < 0 ? "down" : ""; }
+  function safeUrl(u) { return /^https:\/\/[^\s"'<>]+$/.test(u) ? u : null; }
+  function colL(i) { var s = ""; i++; while (i > 0) { var m = (i - 1) % 26; s = String.fromCharCode(65 + m) + s; i = Math.floor((i - 1) / 26); } return s; }
+  function key(s) { return String(s || "").trim().toLowerCase(); }
+
+  // ---------- table parsing by header names ----------
+  function mapCols(header, spec) {
+    var h = header.map(function (x) { return String(x == null ? "" : x).trim(); }), out = {};
+    Object.keys(spec).forEach(function (k) { out[k] = h.indexOf(spec[k]); });
+    return out;
+  }
+  function parseTable(vals, spec, req) {
+    var cols = mapCols(vals[0] || [], spec), out = [];
+    for (var i = 1; i < vals.length; i++) {
+      var r = vals[i] || [], o = { row: i + 1 };
+      Object.keys(spec).forEach(function (k) { var c = cols[k]; o[k] = c >= 0 && r[c] != null ? String(r[c]).trim() : ""; });
+      if (o[req || "name"]) out.push(o);
+    }
+    return { cols: cols, rows: out };
+  }
+  function sampleToVals(spec, list) {
+    var keys = Object.keys(spec), vals = [keys.map(function (k) { return spec[k]; })];
+    list.forEach(function (o) { vals.push(keys.map(function (k) { return o[k] || ""; })); });
+    return vals;
+  }
+  function unpack(res) {
+    var p = res && res.payload;
+    if (typeof p === "string") { try { p = JSON.parse(p); } catch (e) {} }
+    return (p && p.values) || (res && res.structuredContent && res.structuredContent.values) || null;
+  }
+
+  // ---------- contacts ----------
+  function tgUrl(s) {
+    s = String(s || "").trim(); if (!s || s === "-") return null;
+    var m = s.match(/^@([A-Za-z0-9_]{4,32})$/) || s.match(/^https:\/\/t\.me\/([A-Za-z0-9_]{4,32})/);
+    return m ? { url: "https://t.me/" + m[1], handle: "@" + m[1] } : null;
+  }
+  function contacts(a) {
+    var out = [], seen = {};
+    function add(c, id) { id = id.toLowerCase(); if (seen[id]) return; seen[id] = 1; out.push(c); }
+    var t = tgUrl(a.tg); if (t) add({ kind: "tg", label: "", url: t.url, handle: t.handle }, t.url);
+    var ig = safeUrl(a.ig); if (ig) add({ kind: "ig", url: ig }, ig);
+    var vk = safeUrl(a.vk); if (vk) add({ kind: "vk", url: vk }, vk);
+    if (a.mail && /@/.test(a.mail)) add({ kind: "mail", text: a.mail }, a.mail);
+    var text = String(a.extra || ""), m;
+    var re = /(?<![\w.])@([A-Za-z0-9_]{4,32})/g;
+    while ((m = re.exec(text))) {
+      var h = m[1], seg = text.slice(0, m.index), cut = Math.max(seg.lastIndexOf("\n"), seg.lastIndexOf(";"));
+      var pre = seg.slice(cut + 1).replace(/\s*[-–—]\s*$/, "").trim();
+      add({ kind: "tg", label: pre && pre.length <= 28 ? pre : "", url: "https://t.me/" + h, handle: "@" + h }, "https://t.me/" + h);
+    }
+    var ig2 = /https:\/\/(?:www\.)?instagram\.com\/[^\s;]+/g;
+    while ((m = ig2.exec(text))) { var u = safeUrl(m[0]); if (u) add({ kind: "ig", url: u }, u); }
+    var vk2 = /https:\/\/vk\.com\/[^\s;]+/g;
+    while ((m = vk2.exec(text))) { var v = safeUrl(m[0]); if (v) add({ kind: "vk", url: v }, v); }
+    var em = /[\w.+-]+@[\w-]+\.[\w.]+/g;
+    while ((m = em.exec(text))) add({ kind: "mail", text: m[0] }, m[0]);
+    return out;
+  }
+
+  // ---------- demo metrics (not real) ----------
+  function seeded(name) { var h = 2166136261; for (var i = 0; i < name.length; i++) { h ^= name.charCodeAt(i); h = Math.imul(h, 16777619); } return function () { h ^= h << 13; h ^= h >>> 17; h ^= h << 5; return ((h >>> 0) % 10000) / 10000; }; }
+  function demoSeries(name, n) {
+    var r = seeded(name), v = 12000 + r() * 70000, out = [];
+    for (var i = 0; i < n; i++) { v *= 1 + (r() - 0.42) * 0.035; out.push(Math.round(v)); }
+    return out;
+  }
+  // ---------- real metrics (Metrics tab, written by ym_sync.py) ----------
+  var MET = {};
+  function parseMetrics(vals) {
+    var out = {};
+    (vals || []).slice(1).forEach(function (r) {
+      var d = pd(r && r[0]), nm = String(r && r[1] || "").trim(); if (!d || !nm) return;
+      var l = pnum(r[2]), dl = parseInt(String(r[3] == null ? "" : r[3]).replace(/[\s\u00a0]/g, "").replace("\u2212", "-"), 10), k = pnum(r[4]);
+      if (l == null) return;
+      (out[nm] = out[nm] || []).push({ d: d, l: l, dl: isNaN(dl) ? null : dl, k: k });
+    });
+    Object.keys(out).forEach(function (nm) {
+      out[nm].sort(function (a, b) { return a.d - b.d; });
+      var u = [];
+      out[nm].forEach(function (p) { if (u.length && u[u.length - 1].d.getTime() === p.d.getTime()) u[u.length - 1] = p; else u.push(p); });
+      out[nm] = u;
+    });
+    return out;
+  }
+  // one value per calendar day, gaps carry the last known value, runs up to today
+  function dailySeries(pts) {
+    var out = [], i = 0, cur = pts[0].l, d = pts[0].d, last = pts[pts.length - 1].d, end = TODAY > last ? TODAY : last;
+    while (d <= end) {
+      while (i < pts.length && pts[i].d <= d) { cur = pts[i].l; i++; }
+      out.push(cur);
+      d = new Date(d.getFullYear(), d.getMonth(), d.getDate() + 1);
+    }
+    return out;
+  }
+  var NS = "http://www.w3.org/2000/svg";
+  function svg(tag, attrs) { var n = document.createElementNS(NS, tag); Object.keys(attrs || {}).forEach(function (k) { n.setAttribute(k, attrs[k]); }); return n; }
+  function spark(series) {
+    var w = 84, h = 28, mn = Math.min.apply(null, series), mx = Math.max.apply(null, series), pts = series.map(function (v, i) { return (i / (series.length - 1) * w).toFixed(1) + "," + (h - 3 - (v - mn) / ((mx - mn) || 1) * (h - 6)).toFixed(1); });
+    var s = svg("svg", { "class": "spark", viewBox: "0 0 " + w + " " + h, "aria-hidden": "true" });
+    s.append(svg("polyline", { "class": "ln", pathLength: "1", points: pts.join(" ") }));
+    return s;
+  }
+  function kfmt(v) { return v >= 1000 ? (Math.round(v / 100) / 10).toString().replace(".", ",") + " тыс." : String(Math.round(v)); }
+  function chart(series, dropDate, n) {
+    var W = 320, H = 156, L = 50, R = 10, T = 10, B = 24, mn = Math.min.apply(null, series), mx = Math.max.apply(null, series);
+    var pad = (mx - mn) * 0.1 || 1; mn -= pad; mx += pad;
+    var X = function (i) { return L + i / (series.length - 1) * (W - L - R); };
+    var Y = function (v) { return T + (1 - (v - mn) / (mx - mn)) * (H - T - B); };
+    var s = svg("svg", { "class": "chart", viewBox: "0 0 " + W + " " + H, role: "img", "aria-label": "График слушателей" });
+    [mn + pad, (mn + mx) / 2, mx - pad].forEach(function (t) {
+      s.append(svg("line", { "class": "grid", x1: L, x2: W - R, y1: Y(t), y2: Y(t) }));
+      var tx = svg("text", { "class": "lbl", x: L - 6, y: Y(t) + 3, "text-anchor": "end" }); tx.textContent = kfmt(t); s.append(tx);
+    });
+    var pts = series.map(function (v, i) { return X(i).toFixed(1) + "," + Y(v).toFixed(1); });
+    s.append(svg("polygon", { "class": "ar", points: pts.join(" ") + " " + X(series.length - 1) + "," + (H - B) + " " + X(0) + "," + (H - B) }));
+    s.append(svg("polyline", { "class": "ln", pathLength: "1", points: pts.join(" ") }));
+    s.append(svg("circle", { "class": "dot", cx: X(series.length - 1), cy: Y(series[series.length - 1]), r: 3.5 }));
+    var d0 = new Date(TODAY.getTime() - (n - 1) * DAY);
+    var a = svg("text", { "class": "lbl", x: L, y: H - 6 }); a.textContent = fmtShort(d0); s.append(a);
+    var b = svg("text", { "class": "lbl", x: W - R, y: H - 6, "text-anchor": "end" }); b.textContent = "сегодня"; s.append(b);
+    if (dropDate) {
+      var k = n - 1 - dd(TODAY, dropDate);
+      if (k >= 0 && k < n) {
+        s.append(svg("line", { "class": "mk", x1: X(k), x2: X(k), y1: T, y2: H - B }));
+        var dl = svg("text", { "class": "mkl", x: Math.min(X(k) + 4, W - 50), y: T + 10 }); dl.textContent = "дроп " + fmtShort(dropDate); s.append(dl);
+      }
+    }
+    return s;
+  }
+
+  // ---------- look & motion helpers ----------
+  var REDUCED = !!(window.matchMedia && matchMedia("(prefers-reduced-motion: reduce)").matches);
+  function hashStr(t) { var h = 2166136261; for (var i = 0; i < t.length; i++) { h ^= t.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; }
+  // photos live in the optional "Фото" column as a small data: image (the page cannot load images from other sites)
+  function photoOf(name) {
+    var k = key(name), a = rowsA.filter(function (x) { return key(x.name) === k && x.photo; })[0] || rowsS.filter(function (x) { return key(x.name) === k && x.photo; })[0];
+    return a && /^data:image\/(png|jpe?g|webp);base64,[A-Za-z0-9+\/=]+$/.test(a.photo) ? a.photo : null;
+  }
+  function avatar(name, big) {
+    var h = hashStr(key(name)) % 360, n = el("div", { "class": "av" + (big ? " big" : "") }), ph = photoOf(name);
+    if (ph) n.append(el("img", { src: ph, alt: "" }));
+    else {
+      n.style.background = "linear-gradient(135deg, hsl(" + h + " 85% 62%), hsl(" + ((h + 55) % 360) + " 90% 56%))";
+      var w = String(name).replace(/[^\p{L}\p{N} ]/gu, "").trim().split(/\s+/), t = (w[0] ? w[0][0] : "?") + (w[1] ? w[1][0] : "");
+      n.append(el("span", { text: t.toUpperCase() }));
+    }
+    return n;
+  }
+  function animNum(node, to, fmt) {
+    fmt = fmt || num;
+    if (REDUCED || !(to > 0)) { node.textContent = fmt(to); return node; }
+    node.textContent = fmt(0);
+    var t0 = performance.now(), dur = 800;
+    (function step(t) { var p = Math.min(1, (t - t0) / dur), e = 1 - Math.pow(1 - p, 3); node.textContent = fmt(to * e); if (p < 1) requestAnimationFrame(step); })(t0);
+    return node;
+  }
+  function bigEl(value, fmt) { var n = el("div", { "class": "big" }); if (value == null) n.textContent = "—"; else animNum(n, value, fmt); return n; }
+  var lastClick = { x: innerWidth / 2, y: innerHeight / 2 };
+  document.addEventListener("click", function (e) { lastClick = { x: e.clientX, y: e.clientY }; }, true);
+  function burst() {
+    if (REDUCED) return;
+    var box = el("div", { "class": "burst" }); box.style.left = lastClick.x + "px"; box.style.top = lastClick.y + "px";
+    for (var i = 0; i < 14; i++) {
+      var ang = i / 14 * Math.PI * 2, r = 42 + Math.random() * 44, p = el("i");
+      p.style.setProperty("--dx", Math.cos(ang) * r + "px"); p.style.setProperty("--dy", Math.sin(ang) * r + "px");
+      p.style.background = i % 3 ? "var(--accent)" : "var(--ink)"; box.append(p);
+    }
+    document.body.append(box); setTimeout(function () { box.remove(); }, 900);
+  }
+  var renderedKey = null, busyToast = false;
+  function updateBusy() { document.body.classList.toggle("busy", !loaded || busyToast); }
+  function animateView(isCard, hashKey) {
+    view.querySelectorAll(".list .item, .list .task").forEach(function (n, i) { n.style.setProperty("--i", Math.min(i, 14)); });
+    view.classList.remove("in-tab", "in-card");
+    if (hashKey === renderedKey) return;
+    renderedKey = hashKey; void view.offsetWidth; view.classList.add(isCard ? "in-card" : "in-tab");
+  }
+
+  // ---------- notices, toast, errors ----------
+  var noticeEl = document.getElementById("notice");
+  function notice(msg, kind, action) {
+    noticeEl.replaceChildren();
+    if (!msg) return;
+    var box = el("div", { "class": "banner " + (kind || "") }, el("div", { text: msg }));
+    if (action) box.append(el("button", { "class": "btn sm", type: "button", onclick: action.fn, text: action.label }));
+    noticeEl.append(box);
+  }
+  var toastEl = document.getElementById("toast"), toastT = null;
+  function toast(msg, bad) {
+    toastEl.textContent = msg; toastEl.className = "toast" + (bad ? " bad" : ""); toastEl.hidden = false;
+    busyToast = /…$/.test(msg); updateBusy();
+    toastEl.style.animation = "none"; void toastEl.offsetWidth; toastEl.style.animation = "";
+    clearTimeout(toastT); toastT = setTimeout(function () { toastEl.hidden = true; busyToast = false; updateBusy(); }, busyToast ? 20000 : bad ? 6000 : 2600);
+  }
+  function errMsg(err) {
+    var code = err && err.code;
+    if (code === "bad_init") return "Открой апп из Telegram, через бота.";
+    if (code === "unauthorized") return "Твоего Telegram ID нет в списке. Впиши его во вкладку «Пользователи».";
+    if (code === "network") return "Нет связи с таблицей.";
+    if (code === "busy") return "Таблица занята, попробуй ещё раз.";
+    if (code === "approval_required" || code === "consent_required") return "Нужно разрешить странице работать с Google Sheets.";
+    if (code === "not_in_manifest") return "Доступ к таблице для этой страницы выключен.";
+    if (code === "server_not_connected") return "Google Sheets не подключён. Добавь его в claude.ai: Settings → Connectors.";
+    if (code === "needs_reauth") return "Доступ к Google Sheets истёк. Переподключи его в claude.ai: Settings → Connectors.";
+    if (code === "selection_required") return "Подключено несколько Google Sheets, выбери нужный в окне claude.ai.";
+    if (code === "server_unavailable" || code === "upstream_error") return "Google Sheets сейчас не отвечает.";
+    if (code === "blocked_by_policy") return "Организация запретила этой странице работать с таблицами.";
+    return "Не вышло" + (err && err.message ? " (" + err.message + ")." : ".");
+  }
+
+  // ---------- sheet access: Apps Script API, signed by Telegram ----------
+  var API_URL = "https://script.google.com/macros/s/AKfycbw6Z5kjGvdjVzOSGZf1pI1UT38VtAdplK-_fNl23MZLuby4RSDHKCezOxmnnJ8dj0t_lg/exec";
+  var TG = window.Telegram && window.Telegram.WebApp, TG_INIT = (TG && TG.initData) || "";
+  try { if (TG) { TG.ready(); TG.expand(); if (TG.disableVerticalSwipes) TG.disableVerticalSwipes(); } } catch (e) {}
+  var API = { callTool: function (server, tool, input) {
+    return fetch(API_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ initData: TG_INIT, tool: tool, input: input }) })
+      .then(function (r) { return r.text(); }, function () { throw { code: "network", message: "нет связи" }; })
+      .then(function (t) { var j; try { j = JSON.parse(t); } catch (e) { throw { code: "api", message: "сервер ответил не так, как ждали" }; } if (j && j.error) throw { code: j.code || "api", message: j.error }; return { payload: j.result }; });
+  } };
+  // ---------- sheet access ----------
+  function call(tool, input) { return mcpH.callTool(SERVER, tool, input, { cache: false }); }
+  function readRange(range) { return call("get_values", { spreadsheetId: SHEET_ID, range: range }).then(unpack); }
+  function writeCell(tab, colIdx, row, value) {
+    return call("update_values", { spreadsheetId: SHEET_ID, range: tab + "!" + colL(colIdx) + row, values: [[value]] });
+  }
+  // The row number can move if the sheet is sorted or edited after load, so look the artist up again right before writing.
+  function findRow(tab, nameCol, name) {
+    var L = colL(nameCol);
+    return readRange(tab + "!" + L + "1:" + L + "1000").then(function (vals) {
+      vals = vals || [];
+      for (var i = 1; i < vals.length; i++) if (String(vals[i] && vals[i][0] || "").trim() === name) return i + 1;
+      return 0;
+    });
+  }
+  // updates: [{ k: fieldKey, v: value } or { k, add: "text to append on a new line" }]
+  function saveFields(tab, cols, obj, updates) {
+    function applyLocal() {
+      updates.forEach(function (u) { obj[u.k] = u.add ? (obj[u.k] ? obj[u.k] + "\n" + u.add : u.add) : u.v; });
+    }
+    if (!live) { applyLocal(); return Promise.resolve(); }
+    var missing = updates.filter(function (u) { return cols[u.k] < 0; });
+    if (missing.length) return Promise.reject({ message: "в таблице нет колонки «" + (tab === TAB_A ? HA : tab === TAB_T ? HT : HS)[missing[0].k] + "»" });
+    var kc = tab === TAB_T ? cols.id : cols.name, kv = tab === TAB_T ? obj.id : obj.name;
+    return findRow(tab, kc, kv).then(function (row) {
+      if (!row) return Promise.reject({ message: "«" + (obj.name || obj.text) + "» не найден в таблице, обнови страницу" });
+      var chain = Promise.resolve();
+      updates.forEach(function (u) {
+        chain = chain.then(function () {
+          if (!u.add) return writeCell(tab, cols[u.k], row, u.v);
+          var cell = tab + "!" + colL(cols[u.k]) + row;
+          return readRange(cell).then(function (v) {
+            var cur = v && v[0] && v[0][0] != null ? String(v[0][0]) : "";
+            return writeCell(tab, cols[u.k], row, cur ? cur + "\n" + u.add : u.add);
+          });
+        });
+      });
+      return chain;
+    }).then(function () { applyLocal(); });
+  }
+  function save(tab, obj, updates, doneMsg, rerender) {
+    toast("Сохраняю…");
+    var cols = tab === TAB_A ? colA : tab === TAB_T ? colT : colS;
+    return saveFields(tab, cols, obj, updates).then(function () {
+      toast(live ? (doneMsg || "Сохранено в таблицу") : "Пример: в таблицу не пишу");
+      if (rerender !== false) route();
+      updateCounts();
+    }, function (err) { toast(errMsg(err), true); route(); });
+  }
+
+  // ---------- data loading ----------
+  function setData(valsA, valsS, fromSheet, valsT) {
+    var A = parseTable(valsA, HA), S = valsS ? parseTable(valsS, HS) : { cols: mapCols([], HS), rows: [] };
+    var T = valsT ? parseTable(valsT, HT, "text") : { cols: mapCols([], HT), rows: [] };
+    rowsA = A.rows; colA = A.cols; rowsS = S.rows; colS = S.cols; rowsT = T.rows; colT = T.cols; live = fromSheet;
+    loaded = true; updateCounts(); route();
+  }
+  function useSample(msg, action) {
+    setData(sampleToVals(HA, SAMPLE_A), sampleToVals(HS, SAMPLE_S), false, sampleToVals(HT, SAMPLE_T()));
+    notice(msg + " Показываю пример, не всю таблицу, и ничего не сохраняю.", "", action);
+  }
+  function load() {
+    loaded = false; route();
+    if (!TG_INIT) { useSample("Открой апп из Telegram, через бота."); return; }
+    Promise.resolve(API).then(function (mcp) {
+      if (!mcp) { useSample("Нет доступа к коннекторам в этом окне."); return; }
+      mcpH = mcp;
+      var pS = readRange(TAB_S + "!A1:T700").then(function (v) { return { v: v }; }, function (e) { return { err: e }; });
+      var pL = readRange("Списки!B2:B60").then(function (v) { return v; }, function () { return null; });
+      var pM = readRange("Metrics!A1:E5000").then(function (v) { return v; }, function () { return null; });
+      var pT = readRange(TAB_T + "!A1:G1000").then(function (v) { return { v: v }; }, function (e) { return { err: e }; });
+      return readRange(TAB_A + "!A1:AB300").then(function (valsA) {
+        if (!Array.isArray(valsA) || valsA.length < 2) { useSample("Таблица ответила, но данных в формате, который я ждал, нет."); return; }
+        return Promise.all([pS, pT, pL, pM]).then(function (r) {
+          var s = r[0], tt = r[1];
+          var names = (r[2] || []).map(function (x) { return String(x && x[0] || "").trim(); }).filter(Boolean);
+          if (names.length) OWNERS = names;
+          MET = parseMetrics(r[3]);
+          setData(valsA, s.v && s.v.length > 1 ? s.v : null, true, tt.v && tt.v.length > 0 ? tt.v : null);
+          var bad = [];
+          ["name", "status", "next", "last", "log"].forEach(function (k) { if (colA[k] < 0) bad.push("«" + HA[k] + "»"); });
+          if (s.err) notice("Вкладка «Поиск» не прочиталась: " + errMsg(s.err), "");
+          else if (tt.err) notice("Вкладка «Задачи» не прочиталась: " + errMsg(tt.err), "");
+          else if (bad.length) notice("В Artists нет колонок " + bad.join(", ") + ". Часть функций не будет работать.", "");
+          else notice("", "");
+          document.getElementById("datestr").textContent = longDate(TODAY) + " · таблица в " + two(new Date().getHours()) + ":" + two(new Date().getMinutes());
+        });
+      }, function (err) {
+        var code = err && err.code, retry = { label: "Попробовать снова", fn: load };
+        useSample(errMsg(err), code === "approval_required" || code === "consent_required" ? { label: "Разрешить доступ к таблице", fn: load } : (code === "server_unavailable" || code === "upstream_error" || code === "selection_required" || code === "network" || code === "busy" || code === "api" || !code) ? retry : null);
+      });
+    }, function () { useSample("Нет доступа к коннекторам."); });
+  }
+
+  // ---------- screens ----------
+  var view = document.getElementById("view");
+  function longDate(d) {
+    var w = ["воскресенье", "понедельник", "вторник", "среда", "четверг", "пятница", "суббота"][d.getDay()];
+    var m = ["января", "февраля", "марта", "апреля", "мая", "июня", "июля", "августа", "сентября", "октября", "ноября", "декабря"][d.getMonth()];
+    return w + ", " + d.getDate() + " " + m;
+  }
+  function pill(status) { return el("span", { "class": "pill s-" + (STKEY[status] || "none"), text: status || "Без статуса" }); }
+  function artistNames() { var s = {}; rowsA.forEach(function (a) { s[key(a.name)] = a; }); return s; }
+  function newFinds() {
+    var inA = artistNames();
+    return rowsS.filter(function (c) { return !c.decision && !inA[key(c.name)]; });
+  }
+  function sortByDateDesc(arr) { return arr.slice().sort(function (x, y) { var a = pd(x.date), b = pd(y.date); return (b ? b.getTime() : 0) - (a ? a.getTime() : 0) || x.name.localeCompare(y.name, "ru"); }); }
+  function openArtist(a) { location.hash = "artist-" + rowsA.indexOf(a); }
+  function openFind(c) { location.hash = "find-" + rowsS.indexOf(c); }
+  function item(open, name, meta, metaClass, desc) {
+    return el("button", { "class": "item", type: "button", onclick: open },
+      avatar(name),
+      el("span", { "class": "nm", text: name }),
+      el("span", { "class": "ds", text: desc }),
+      el("span", { "class": "mt " + (metaClass || ""), text: meta || "" }));
+  }
+  function aItem(a, meta, cls, desc) { return item(function () { openArtist(a); }, a.name, meta, cls, desc); }
+  function skeleton() { view.replaceChildren(el("div", null, el("div", { "class": "skel" }), el("div", { "class": "skel" }), el("div", { "class": "skel" }))); }
+  function updateCounts() {
+    var nt = openTasksDue().length; document.getElementById("n-tasks").textContent = nt ? nt : "";
+    document.getElementById("n-artists").textContent = rowsA.length ? rowsA.length : "";
+    document.getElementById("n-mine").textContent = rowsA.length ? rowsA.filter(function (a) { return a.status === "Подписан"; }).length || "" : "";
+    var nf = newFinds().length;
+    document.getElementById("n-search").textContent = nf ? nf : "";
+  }
+  function section(title, count, list) {
+    return el("section", { "class": "block" }, el("h3", null, el("span", { text: title }), el("span", { text: count != null ? String(count) : "" })), list);
+  }
+  function limited(items, cap) {
+    var box = el("div", { "class": "list" });
+    items.slice(0, cap).forEach(function (x) { box.append(x); });
+    if (items.length > cap) {
+      var btn = el("button", { "class": "more", type: "button", text: "Ещё " + (items.length - cap), onclick: function () { btn.remove(); items.slice(cap).forEach(function (x) { box.append(x); }); } });
+      box.append(btn);
+    }
+    return box;
+  }
+  function findDesc(c) {
+    var n = pnum(c.listeners), l = pnum(c.likes), parts = [];
+    if (n != null) parts.push(num(n) + " слуш.");
+    if (n && l != null) parts.push((l / n * 100).toFixed(1).replace(".", ",") + "% лайков");
+    if (String(c.delta || "").trim() !== "") parts.push(deltaText(c.delta) + " за мес.");
+    if (c.drop) parts.push("дроп: " + c.drop);
+    return parts.join(" · ") || "метрик пока нет";
+  }
+
+  function renderToday() {
+    var due = [], nodate = [], silent = [], debt = [];
+    rowsA.forEach(function (a) {
+      if (a.status === "Подписан" || a.status === "Отказ") { if (a.debt) debt.push(a); return; }
+      var nd = pd(a.next), md = pd(a.meet);
+      var when = null, what = "";
+      if (nd) { when = nd; what = "касание"; }
+      if (md && (a.status === "Созвон" || a.status === "Встреча") && (!when || md < when)) { when = md; what = a.status === "Созвон" ? "созвон" : "встреча"; }
+      if (when && dd(when, TODAY) <= 7) due.push({ a: a, when: when, what: what });
+      if ((a.status === "Созвон" || a.status === "Встреча") && !(md && md >= TODAY) && !(nd && nd >= TODAY)) nodate.push(a);
+      if ((a.status === "Написал" || HELD[a.status]) && a.tag === "молчит") {
+        var base = pd(a.last) || pd(a.first);
+        if (base) { var n = dd(TODAY, base); if (n >= 7) silent.push({ a: a, n: n }); }
+      }
+      if (a.debt) debt.push(a);
+    });
+    due.sort(function (x, y) { return x.when - y.when; });
+    silent.sort(function (x, y) { return y.n - x.n; });
+    var finds = sortByDateDesc(newFinds());
+    var out = el("div");
+    var tk = openTasksDue();
+    var total = due.length + nodate.length + tk.length;
+    out.append(el("div", { "class": "hello" },
+      el("h2", null, total ? [animNum(el("span", { "class": "hero-n" }), total), plural(total, "дело", "дела", "дел") + " на сегодня"] : "На сегодня чисто"),
+      el("p", { text: silent.length ? silent.length + " " + plural(silent.length, "артист молчит", "артиста молчат", "артистов молчат") + " больше недели" : "Молчунов больше недели нет" })));
+    if (tk.length) out.append(section("Задачи", tk.length, limited(tk.map(taskRow), 8)));
+    if (due.length) out.append(section("Касания", due.length, limited(due.map(function (x) {
+      var n = dd(x.when, TODAY), m = n === 0 ? "сегодня" : n === 1 ? "завтра" : n < 0 ? "просрочено " + days(-n) : "через " + days(n);
+      return aItem(x.a, m, n < 0 ? "hot" : n <= 1 ? "soon" : "", x.what + " · " + x.a.status + (x.a.label ? " · " + x.a.label : ""));
+    }), 8)));
+    if (nodate.length) out.append(section("Нужна дата", nodate.length, limited(nodate.map(function (a) {
+      return aItem(a, "назначить", "hot", "статус «" + a.status + "», а даты в таблице нет");
+    }), 8)));
+    if (silent.length) out.append(section("Молчат больше недели", silent.length, limited(silent.map(function (x) {
+      return aItem(x.a, days(x.n), "", (x.a.status === "Написал" ? "ответа нет" : "диалог затух") + (x.a.label ? " · " + x.a.label : ""));
+    }), 5)));
+    if (finds.length) out.append(section("Новые находки без решения", finds.length, limited(finds.map(function (c) {
+      var d = pd(c.date);
+      return item(function () { openFind(c); }, c.name, d ? fmtShort(d) : "", "", findDesc(c));
+    }), 5)));
+    if (debt.length) out.append(section("Долг по трекам", debt.length, limited(debt.map(function (a) {
+      return aItem(a, a.debt + " " + plural(+a.debt || 0, "трек", "трека", "треков"), "", (a.label || "лейбл не указан") + (a.tag ? " · " + a.tag : ""));
+    }), 8)));
+    if (!total && !silent.length && !debt.length && !finds.length) out.append(el("div", { "class": "empty", text: "Ничего не горит." }));
+    view.replaceChildren(out);
+  }
+
+  var filter = { q: "", st: "Все" };
+  function ownChips(redraw) {
+    var box = el("div", { "class": "chips owners" });
+    ["Все"].concat(ownersAll()).forEach(function (o) {
+      box.append(el("button", { "class": "chip", type: "button", "aria-pressed": own === o ? "true" : "false", text: o === "Все" ? "Все" : o, onclick: function () { own = o; redraw(); } }));
+    });
+    return box;
+  }
+  function renderArtists() {
+    var wrap = el("div");
+    var search = el("input", { "class": "search", id: "q", type: "search", placeholder: "Имя, лейбл или тег", value: filter.q, autocomplete: "off" });
+    var chips = el("div", { "class": "chips" });
+    var listHost = el("div");
+    function draw() {
+      chips.replaceChildren();
+      ["Все"].concat(STATUSES).forEach(function (s) {
+        chips.append(el("button", { "class": "chip", type: "button", "aria-pressed": filter.st === s ? "true" : "false", text: s, onclick: function () { filter.st = s; draw(); } }));
+      });
+      var q = filter.q.trim().toLowerCase();
+      var arr = rowsA.filter(function (a) {
+        if (filter.st !== "Все" && a.status !== filter.st) return false;
+        if (own !== "Все" && (a.resp || RESP_DEFAULT) !== own) return false;
+        return !q || (a.name + " " + a.label + " " + a.tag).toLowerCase().indexOf(q) >= 0;
+      }).sort(function (x, y) { return (STRANK[x.status] == null ? 9 : STRANK[x.status]) - (STRANK[y.status] == null ? 9 : STRANK[y.status]) || x.name.localeCompare(y.name, "ru"); });
+      listHost.replaceChildren();
+      if (!arr.length) { listHost.append(el("div", { "class": "empty", text: "Никого не нашлось." })); return; }
+      var box = el("div", { "class": "list" });
+      arr.forEach(function (a) {
+        var base = pd(a.last) || pd(a.first), ago = base ? days(Math.max(0, dd(TODAY, base))) + " назад" : "";
+        box.append(el("button", { "class": "item", type: "button", onclick: function () { openArtist(a); } },
+          avatar(a.name),
+          el("span", { "class": "nm", text: a.name }),
+          el("span", { "class": "ds", text: [own === "Все" ? a.resp : "", a.label, a.tag, ago ? "контакт " + ago : ""].filter(Boolean).join(" · ") }),
+          el("span", { "class": "mt" }, pill(a.status))));
+      });
+      listHost.append(box);
+    }
+    search.addEventListener("input", function () { filter.q = search.value; draw(); });
+    var ownBox = ownChips(function () { renderArtists(); });
+    wrap.append(el("div", { "class": "tools" }, search, ownBox, chips), listHost);
+    view.replaceChildren(wrap); draw();
+  }
+
+  var sf = { q: "", st: "Новые", add: false };
+  var nf = { name: "", drop: "", ym: "", ig: "", tt: "", tg: "", listeners: "", likes: "", delta: "", comment: "", finder: RESP_DEFAULT };
+  function addFind(rec) {
+    var nm = rec.name.trim();
+    if (rowsS.some(function (c) { return key(c.name) === key(nm); })) { toast("«" + nm + "» уже есть в Поиске", true); return; }
+    var inA = artistNames()[key(nm)];
+    if (inA) { toast("«" + nm + "» уже в Artists, его ведёт " + (inA.resp || "—"), true); return; }
+    toast("Добавляю…");
+    var item = { row: 0 }; Object.keys(HS).forEach(function (k) { item[k] = rec[k] || ""; });
+    if (String(item.delta).trim() !== "") { var dn = parseDelta(item.delta); if (dn != null) item.delta = String(dn); }
+    item.name = nm; item.date = fmtFull(TODAY); item.decision = ""; item.finder = rec.finder || RESP_DEFAULT;
+    function done() {
+      rowsS.push(item); nf = { name: "", drop: "", ym: "", ig: "", tt: "", tg: "", listeners: "", likes: "", delta: "", comment: "", finder: rec.finder || RESP_DEFAULT };
+      sf.add = false; sf.st = "Новые"; sf.q = ""; burst(); updateCounts();
+      toast(live ? "Добавил в Поиск" : "Пример: в таблицу не пишу"); route();
+    }
+    if (!live) { done(); return; }
+    if (colS.name < 0) { toast("На вкладке «Поиск» нет колонки «Артист»", true); return; }
+    var L = colL(colS.name);
+    readRange(TAB_S + "!" + L + "1:" + L + "1000").then(function (vals) {
+      vals = vals || []; var last = 1;
+      for (var i = 1; i < vals.length; i++) if (String(vals[i] && vals[i][0] || "").trim()) last = i + 1;
+      var target = last + 1, chain = Promise.resolve();
+      // write cell by cell: ratio and "в Artists" are formula columns and must stay untouched
+      ["date", "name", "drop", "ym", "ig", "tt", "tg", "listeners", "likes", "delta", "comment", "finder"].forEach(function (k) {
+        if (colS[k] >= 0 && item[k] !== "") chain = chain.then(function () { return writeCell(TAB_S, colS[k], target, item[k]); });
+      });
+      return chain;
+    }).then(done, function (err) { toast(errMsg(err), true); });
+  }
+  function addFindForm() {
+    var box = el("div", { "class": "tform" });
+    function field(k, ph, extra) {
+      var i = el("input", { "class": "search", type: "text", placeholder: ph, value: nf[k], autocomplete: "off" });
+      if (extra) i.inputMode = extra;
+      i.addEventListener("input", function () { nf[k] = i.value; });
+      i.addEventListener("keydown", function (e) { if (e.key === "Enter") submit(); });
+      return i;
+    }
+    function submit() {
+      if (!nf.name.trim()) { toast("Нужно хотя бы имя артиста", true); return; }
+      if (!nf.finder) { toast("Укажи, чья это находка", true); return; }
+      rememberOwner(nf.finder);
+      addFind(nf);
+    }
+    var ownSel = el("select", { "aria-label": "Чья находка / кто ведёт" });
+    ownersAll().forEach(function (o) { ownSel.append(el("option", { value: o, text: "Чья находка: " + o, selected: o === nf.finder })); });
+    ownSel.append(el("option", { value: "__new", text: "＋ Другой человек…" }));
+    var newOwn = el("input", { "class": "search", type: "text", placeholder: "Имя нового человека", autocomplete: "off" });
+    newOwn.hidden = true;
+    newOwn.addEventListener("input", function () { nf.finder = newOwn.value.trim(); });
+    ownSel.addEventListener("change", function () {
+      if (ownSel.value === "__new") { newOwn.hidden = false; nf.finder = newOwn.value.trim(); newOwn.focus(); }
+      else { newOwn.hidden = true; nf.finder = ownSel.value; }
+    });
+    box.append(field("name", "Имя артиста *"), ownSel, newOwn, field("drop", "Ласт дроп дист (лейбл)"), field("ym", "Ссылка на Яндекс Музыку"),
+      el("div", { "class": "line" }, field("ig", "Инст"), field("tt", "ТТ"), field("tg", "ТГ")),
+      el("div", { "class": "line" }, field("listeners", "Слушатели", "numeric"), field("likes", "Лайки", "numeric"), field("delta", "Дельта за месяц (+/−)")),
+      field("comment", "Коммент"),
+      el("div", { "class": "line" }, el("button", { "class": "btn primary", type: "button", text: "Добавить в Поиск", onclick: submit }),
+        el("button", { "class": "btn", type: "button", text: "Отмена", onclick: function () { sf.add = false; route(); } })));
+    return box;
+  }
+  function renderSearch() {
+    var wrap = el("div");
+    var search = el("input", { "class": "search", type: "search", placeholder: "Имя или лейбл", value: sf.q, autocomplete: "off" });
+    var chips = el("div", { "class": "chips" });
+    var listHost = el("div");
+    function draw() {
+      var inA = artistNames();
+      var counts = { "Новые": newFinds().length, "Все": rowsS.length };
+      DECISIONS.forEach(function (d) { counts[d] = rowsS.filter(function (c) { return c.decision === d; }).length; });
+      chips.replaceChildren();
+      ["Новые"].concat(DECISIONS, ["Все"]).forEach(function (s) {
+        chips.append(el("button", { "class": "chip", type: "button", "aria-pressed": sf.st === s ? "true" : "false", text: s + " " + counts[s], onclick: function () { sf.st = s; draw(); } }));
+      });
+      var q = sf.q.trim().toLowerCase();
+      var arr = sortByDateDesc(rowsS.filter(function (c) {
+        if (sf.st === "Новые" && (c.decision || inA[key(c.name)])) return false;
+        if (DECISIONS.indexOf(sf.st) >= 0 && c.decision !== sf.st) return false;
+        if (own !== "Все" && (c.finder || RESP_DEFAULT) !== own) return false;
+        return !q || (c.name + " " + c.drop).toLowerCase().indexOf(q) >= 0;
+      }));
+      listHost.replaceChildren();
+      if (!rowsS.length) { listHost.append(el("div", { "class": "empty", text: "Вкладка «Поиск» пустая или не прочиталась." })); return; }
+      if (!arr.length) { listHost.append(el("div", { "class": "empty", text: sf.st === "Новые" ? "Все находки разобраны." : "Никого не нашлось." })); return; }
+      listHost.append(limited(arr.map(function (c) {
+        var d = pd(c.date), tail = inA[key(c.name)] ? "в Artists" : (c.decision || "");
+        return el("button", { "class": "item", type: "button", onclick: function () { openFind(c); } },
+          avatar(c.name),
+          el("span", { "class": "nm", text: c.name }),
+          el("span", { "class": "ds", text: (own === "Все" && c.finder ? c.finder + " · " : "") + findDesc(c) }),
+          el("span", { "class": "mt" }, d ? fmtShort(d) : "", tail ? el("div", { "class": "small", text: tail }) : null));
+      }), 40));
+    }
+    search.addEventListener("input", function () { sf.q = search.value; draw(); });
+    var addBtn = el("button", { "class": "btn primary", type: "button", text: sf.add ? "Закрыть форму" : "+ Добавить артиста", onclick: function () { sf.add = !sf.add; renderSearch(); } });
+    wrap.append(el("div", { "class": "actions", style: "margin-top:0" }, addBtn));
+    if (sf.add) wrap.append(addFindForm());
+    wrap.append(el("div", { "class": "tools" }, search, ownChips(function () { renderSearch(); }), chips), listHost);
+    view.replaceChildren(wrap); draw();
+  }
+
+  function renderMine() {
+    var mine = rowsA.filter(function (a) { return a.status === "Подписан"; }).sort(function (x, y) { return x.name.localeCompare(y.name, "ru"); });
+    var out = el("div");
+    if (!live) out.append(el("div", { "class": "banner demo" }, el("div", { text: "Это пример: цифры слушателей придуманы, чтобы показать дизайн." })));
+    else if (!mine.some(function (a) { return MET[a.name] && MET[a.name].length; })) out.append(el("div", { "class": "banner demo" }, el("div", { text: "В Metrics пока нет цифр по подписанным. Запусти ym_sync.py с российским VPN, и они появятся." })));
+    if (!mine.length) { out.append(el("div", { "class": "empty", text: "Подписанных пока нет." })); view.replaceChildren(out); return; }
+    var box = el("div", { "class": "list" });
+    mine.forEach(function (a) {
+      var item = el("button", { "class": "item", type: "button", onclick: function () { openArtist(a); } }, avatar(a.name), el("span", { "class": "nm", text: a.name }));
+      if (!live) {
+        var s = demoSeries(a.name, 60), last = s[s.length - 1], prev = s[s.length - 2], pct = (last - prev) / prev * 100;
+        item.append(el("span", { "class": "ds" }, num(last) + " слушателей ", el("span", { "class": pct >= 0 ? "up" : "down", text: (pct >= 0 ? "+" : "−") + Math.abs(pct).toFixed(1).replace(".", ",") + "% за сутки" })), el("span", { "class": "mt" }, spark(s.slice(-30))));
+      } else {
+        var pts = MET[a.name];
+        if (!pts || !pts.length) item.append(el("span", { "class": "ds", text: "нет данных, проверь ссылку на ЯМ" }));
+        else {
+          var p = pts[pts.length - 1], ds = el("span", { "class": "ds" }, num(p.l) + " слушателей ");
+          if (p.dl != null) ds.append(el("span", { "class": p.dl >= 0 ? "up" : "down", text: (p.dl >= 0 ? "+" : "−") + num(Math.abs(p.dl)) + " за месяц" }));
+          item.append(ds);
+          if (pts.length > 1) item.append(el("span", { "class": "mt" }, spark(dailySeries(pts).slice(-30))));
+        }
+      }
+      box.append(item);
+    });
+    out.append(section("Подписаны", mine.length, box));
+    view.replaceChildren(out);
+  }
+
+  function fact(label, content, wide) { return el("div", { "class": "fact" + (wide ? " wide" : "") }, el("span", { "class": "k", text: label }), content); }
+  function linkBtn(href, text, primary) { return el("a", { "class": "btn" + (primary ? " primary" : ""), href: href, target: "_blank", rel: "noopener noreferrer", text: text }); }
+  function copyBtn(text, label) {
+    return el("button", { "class": "btn", type: "button", text: label, onclick: function (e) { var b = e.currentTarget; try { navigator.clipboard.writeText(text).then(function () { b.textContent = "Скопировано"; }, function () {}); } catch (err) {} } });
+  }
+
+  function renderCard(i) {
+    var a = rowsA[i];
+    if (!a) { view.replaceChildren(el("div", { "class": "empty", text: "Артист не найден." })); return; }
+    var out = el("div");
+    out.append(el("button", { "class": "back", type: "button", text: "← К списку", onclick: function () { location.hash = lastTab; } }));
+    var head = el("div", { "class": "cardhead" }, avatar(a.name, true), el("h2", { text: a.name }));
+    var meta = el("div", { "class": "meta" }, pill(a.status));
+    if (a.resp) meta.append(el("span", { text: "ведёт: " + a.resp }));
+    if (a.label) meta.append(el("span", { text: a.label }));
+    if (a.tag) meta.append(el("span", { text: "· " + a.tag }));
+    head.append(meta); out.append(head);
+
+    // contact buttons: the main channel from the sheet goes first and is highlighted
+    var cs = contacts(a), actions = el("div", { "class": "actions" });
+    var want = a.chan === "Инст" ? "ig" : a.chan === "ВК" ? "vk" : a.chan === "Почта" ? "mail" : "tg";
+    cs.sort(function (x, y) { return (x.kind === want ? 0 : 1) - (y.kind === want ? 0 : 1); });
+    var firstDone = false;
+    cs.forEach(function (c) {
+      var primary = !firstDone && c.kind === want; if (primary) firstDone = true;
+      if (c.kind === "tg") actions.append(linkBtn(c.url, "Написать" + (c.label ? " · " + c.label : " " + c.handle), primary));
+      else if (c.kind === "ig") actions.append(linkBtn(c.url, primary ? "Написать в инсте" : "Инстаграм", primary));
+      else if (c.kind === "vk") actions.append(linkBtn(c.url, primary ? "Написать в ВК" : "ВК", primary));
+      else if (c.kind === "mail") actions.append(copyBtn(c.text, "Почта: " + c.text));
+    });
+    var ymUrl = /^https:\/\/music\.yandex\.ru\/artist\/\d+/.test(a.ym) ? a.ym : null;
+    if (ymUrl) actions.append(linkBtn(ymUrl, "Яндекс Музыка"));
+    if (!actions.children.length) actions.append(el("span", { "class": "hint", text: "В таблице нет контакта для этого артиста." }));
+    out.append(actions);
+
+    // monthly listeners delta (signed artists get direct monitoring instead)
+    if (a.status !== "Подписан") out.append(el("div", { "class": "metrics" }, deltaEditor(TAB_A, a)));
+
+    // quick touch: today's contact + when to come back
+    if (a.status !== "Подписан" && a.status !== "Отказ") {
+      var panel = el("div", { "class": "panel" }, el("p", { "class": "t", text: "Написал сегодня. Вернуться через" }));
+      var row = el("div", { "class": "row" });
+      [[3, "3 дня"], [7, "неделю"], [14, "2 недели"], [0, "без даты"]].forEach(function (o) {
+        row.append(el("button", { "class": "btn sm", type: "button", text: o[1], onclick: function () { touch(a, o[0]); } }));
+      });
+      panel.append(row, el("p", { "class": "hint", text: "Поставит последний контакт, допишет строку в лог" + (a.status === "Не написал" ? ", статус станет «Написал»" : "") + " и сдвинет следующее касание." }));
+      out.append(panel);
+    }
+
+    var st = el("select", { id: "f-status" }); STATUSES.forEach(function (s) { st.append(el("option", { value: s, text: s, selected: s === a.status })); });
+    if (STATUSES.indexOf(a.status) < 0 && a.status) st.prepend(el("option", { value: a.status, text: a.status, selected: true }));
+    st.addEventListener("change", function () { save(TAB_A, a, [{ k: "status", v: st.value }]); });
+    var tg = el("select", { id: "f-tag" }); tg.append(el("option", { value: "", text: "—" }));
+    var tags = TAGS.slice(); if (a.tag && tags.indexOf(a.tag) < 0) tags.unshift(a.tag);
+    tags.forEach(function (t) { tg.append(el("option", { value: t, text: t, selected: t === a.tag })); });
+    tg.addEventListener("change", function () { save(TAB_A, a, [{ k: "tag", v: tg.value }]); });
+    var nd = pd(a.next), nx = el("input", { id: "f-next", type: "date", value: nd ? toIso(nd) : "" });
+    nx.addEventListener("change", function () { save(TAB_A, a, [{ k: "next", v: nx.value ? fromIso(nx.value) : "" }], null, false); });
+    var md = pd(a.meet), tm = String(a.meet).match(/(\d{1,2}):(\d{2})/);
+    var mv = md ? toIso(md) + "T" + (tm ? two(+tm[1]) + ":" + tm[2] : "12:00") : "";
+    var mt = el("input", { id: "f-meet", type: "datetime-local", value: mv });
+    mt.addEventListener("change", function () {
+      var m = mt.value.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}:\d{2})/);
+      save(TAB_A, a, [{ k: "meet", v: m ? m[3] + "." + m[2] + "." + m[1] + " " + m[4] : "" }], null, false);
+    });
+    out.append(el("div", { "class": "facts" },
+      fact("Статус", st), fact("Тег", tg),
+      fact("Следующее касание", nx), fact("Созвон или встреча", mt),
+      fact("Первое касание", el("span", { "class": "v", text: a.first || "—" })), fact("Последний контакт", el("span", { "class": "v", text: a.last || "—" })),
+      fact("Оффер", el("span", { "class": "v", text: a.offer || "—" }), true),
+      fact("Долг треков", el("span", { "class": "v", text: a.debt || "—" })), fact("Дата дропа", el("span", { "class": "v", text: a.drop || "—" }))));
+    if (a.meet && !md) out.append(el("p", { "class": "hint", text: "В таблице в поле встречи написано: «" + a.meet + "». Дату выбери выше." }));
+
+    if (a.status === "Подписан" && live) {
+      var pts = MET[a.name], rng = 30, holder = el("div");
+      var bigBox = function (val, cls, label) { return el("div", null, el("div", { "class": "big" + (cls ? " " + cls : ""), text: val }), el("div", { "class": "small", text: label })); };
+      var drawChart = function () {
+        if (!pts || !pts.length) { holder.replaceChildren(el("p", { "class": "hint", text: "По этому артисту в Metrics пока ничего нет. Проверь ссылку на ЯМ в карточке и запусти ym_sync.py." })); return; }
+        var last = pts[pts.length - 1], prev = pts.length > 1 ? pts[pts.length - 2] : null;
+        var row = el("div", { "class": "row" }, bigBox(num(last.l), "", "слушателей"));
+        if (last.dl != null) row.append(bigBox((last.dl >= 0 ? "+" : "−") + num(Math.abs(last.dl)), last.dl >= 0 ? "up" : "down", "за месяц, по данным Яндекса"));
+        if (last.k != null) row.append(bigBox(num(last.k), "", "лайков"));
+        if (prev) { var dd1 = last.l - prev.l; row.append(bigBox((dd1 >= 0 ? "+" : "−") + num(Math.abs(dd1)), dd1 >= 0 ? "up" : "down", "с замера " + fmtShort(prev.d))); }
+        holder.replaceChildren(row);
+        if (pts.length > 1) {
+          var s = dailySeries(pts).slice(-rng);
+          holder.append(el("div", { "class": "seg" }, [7, 30, 90].map(function (r) { return el("button", { type: "button", "aria-pressed": rng === r ? "true" : "false", text: r + " дн.", onclick: function () { rng = r; drawChart(); } }); })), chart(s, pd(a.drop), s.length));
+        } else holder.append(el("p", { "class": "hint", text: "График появится, когда накопится хотя бы два дня замеров. Запускай ym_sync.py раз в день. Последний замер: " + fmtFull(last.d) + "." }));
+      };
+      drawChart();
+      out.append(el("section", { "class": "block" }, el("h3", null, el("span", { text: "Слушатели" }), el("span", { text: "Яндекс Музыка" })), el("div", { "class": "metrics" }, holder)));
+    }
+
+    var blocks = el("div", { "class": "text" });
+    [["Чем интересен", a.why], ["Проблема", a.problem], ["Что можем предложить", a.propose], ["Что известно сейчас", a.known], ["Комментарий", a.comment], ["Лог касаний", a.log]].forEach(function (b) {
+      if (b[1]) blocks.append(el("h4", { text: b[0] }), el("p", { text: b[1] }));
+    });
+    out.append(blocks);
+
+    var note = el("textarea", { "class": "note", id: "f-note", placeholder: "Что произошло: ответил, созвонились, договорились…" });
+    var add = el("button", { "class": "btn", type: "button", text: "Добавить в лог", onclick: function () {
+      var t = note.value.trim(); if (!t) return;
+      addLog(a, t, add);
+    } });
+    out.append(el("div", { "class": "text" }, el("h4", { text: "Запись в лог касаний" }), note, add,
+      el("p", { "class": "hint", text: live ? "Запись уходит в таблицу с сегодняшней датой, последний контакт станет «сегодня»." : "Это пример, в таблицу ничего не пишется." })));
+    out.append(removeBlock(a));
+    view.replaceChildren(out);
+    window.scrollTo(0, 0);
+  }
+
+  function removeBlock(a) {
+    var box = el("div", { "class": "text" });
+    function draw(ask) {
+      box.replaceChildren(el("h4", { text: "Убрать из списка" }));
+      if (!ask) {
+        box.append(el("button", { "class": "btn sm bad", type: "button", text: "Убрать артиста из Artists", onclick: function () { draw(true); } }));
+        return;
+      }
+      box.append(el("p", { text: "Строка «" + a.name + "» удалится из вкладки Artists вместе со всеми заметками и логом. Если он есть в Поиске с решением «Пишем», решение сбросится." }),
+        el("div", { "class": "actions" },
+          el("button", { "class": "btn sm bad", type: "button", text: "Да, убрать", onclick: function (e) { e.currentTarget.disabled = true; removeArtist(a); } }),
+          el("button", { "class": "btn sm", type: "button", text: "Отмена", onclick: function () { draw(false); } })));
+    }
+    draw(false);
+    return box;
+  }
+  function removeArtist(a) {
+    toast("Убираю…");
+    function done() {
+      var i = rowsA.indexOf(a); if (i >= 0) rowsA.splice(i, 1);
+      rowsS.forEach(function (c) { if (key(c.name) === key(a.name) && c.decision === "Пишем") c.decision = ""; });
+      updateCounts();
+      toast(live ? "Убрал из Artists" : "Пример: в таблицу не пишу");
+      if (location.hash.slice(1) === lastTab) route(); else location.hash = lastTab;
+    }
+    if (!live) { done(); return; }
+    findRow(TAB_A, colA.name, a.name).then(function (row) {
+      if (!row) return Promise.reject({ message: "«" + a.name + "» не найден в таблице, обнови страницу" });
+      return mcpH.callTool(SERVER, "update_spreadsheet", { spreadsheetId: SHEET_ID, requests: [{ deleteDimension: { range: { sheetId: GID_A, dimension: "ROWS", startIndex: row - 1, endIndex: row } } }] }, { cache: false }).then(function () {
+        var c = rowsS.filter(function (x) { return key(x.name) === key(a.name) && x.decision === "Пишем"; })[0];
+        if (!c || colS.decision < 0) return;
+        return findRow(TAB_S, colS.name, c.name).then(function (srow) { if (srow) return writeCell(TAB_S, colS.decision, srow, ""); });
+      });
+    }).then(done, function (err) { toast(errMsg(err), true); route(); });
+  }
+
+  function touch(a, plus) {
+    burst();
+    var ups = [{ k: "last", v: fmtFull(TODAY) }, { k: "log", add: fmtShort(TODAY) + ": написал" }];
+    if (!a.first) ups.push({ k: "first", v: fmtFull(TODAY) });
+    if (a.status === "Не написал") ups.push({ k: "status", v: "Написал" });
+    ups.push({ k: "next", v: plus ? fmtFull(addDays(TODAY, plus)) : "" });
+    save(TAB_A, a, ups, "Записал: касание сегодня" + (plus ? ", вернуться " + fmtShort(addDays(TODAY, plus)) : ""));
+  }
+  function addLog(a, text, btn) {
+    btn.disabled = true;
+    save(TAB_A, a, [{ k: "log", add: fmtShort(TODAY) + ": " + text }, { k: "last", v: fmtFull(TODAY) }], "Запись добавлена в лог");
+  }
+
+  // ---------- tasks ----------
+  function tTime(t) { var m = String(t.time || "").match(/(\d{1,2}):(\d{2})/); return m ? two(+m[1]) + ":" + m[2] : ""; }
+  function tDate(t) { return pd(t.date) || TODAY; }
+  function taskCmp(a, b) {
+    var x = tDate(a).getTime(), y = tDate(b).getTime(); if (x !== y) return x - y;
+    var p = tTime(a), q = tTime(b); if (p === q) return 0; if (!p) return -1; if (!q) return 1; return p < q ? -1 : 1;
+  }
+  function openTasksDue() { return rowsT.filter(function (t) { return !t.done && dd(tDate(t), TODAY) <= 0; }).sort(taskCmp); }
+  function nowStamp() { var d = new Date(); return fmtFull(d) + " " + two(d.getHours()) + ":" + two(d.getMinutes()); }
+  function checkSvg() { var s = svg("svg", { viewBox: "0 0 24 24", "class": "ckw", "aria-hidden": "true" }); s.append(svg("path", { "class": "ck", pathLength: "1", d: "M5.5 12.5l4.2 4.2L18.5 7.5" })); return s; }
+  function toggleTask(t, btn) {
+    var nowDone = !t.done;
+    btn.classList.toggle("on", nowDone); btn.setAttribute("aria-pressed", nowDone ? "true" : "false");
+    var row = btn.closest(".task"); if (row) row.classList.toggle("done", nowDone);
+    if (nowDone) burst();
+    save(TAB_T, t, [{ k: "done", v: nowDone ? nowStamp() : "" }], nowDone ? "Готово" : "Вернул в работу", false);
+  }
+  function shiftTask(t) {
+    var d = tDate(t), target = dd(d, TODAY) < 0 ? TODAY : addDays(d, 1);
+    save(TAB_T, t, [{ k: "date", v: fmtFull(target) }], "Перенёс на " + fmtShort(target));
+  }
+  function moveOverdue(list) {
+    toast("Переношу…");
+    var chain = Promise.resolve();
+    list.forEach(function (t) { chain = chain.then(function () { return saveFields(TAB_T, colT, t, [{ k: "date", v: fmtFull(TODAY) }]); }); });
+    chain.then(function () { toast(live ? "Перенёс на сегодня" : "Пример: в таблицу не пишу"); updateCounts(); route(); }, function (err) { toast(errMsg(err), true); route(); });
+  }
+  function removeTask(t) {
+    toast("Удаляю…");
+    function done() { var i = rowsT.indexOf(t); if (i >= 0) rowsT.splice(i, 1); updateCounts(); toast(live ? "Задача удалена" : "Пример: в таблицу не пишу"); route(); }
+    if (!live) { done(); return; }
+    findRow(TAB_T, colT.id, t.id).then(function (row) {
+      if (!row) return Promise.reject({ message: "задача не найдена в таблице, обнови страницу" });
+      return mcpH.callTool(SERVER, "update_spreadsheet", { spreadsheetId: SHEET_ID, requests: [{ deleteDimension: { range: { sheetId: GID_T, dimension: "ROWS", startIndex: row - 1, endIndex: row } } }] }, { cache: false });
+    }).then(done, function (err) { toast(errMsg(err), true); route(); });
+  }
+  function addTask(rec) {
+    toast("Добавляю…");
+    var t = { row: 0, id: "t" + Date.now().toString(36), text: rec.text, date: rec.date, time: rec.time, artist: rec.artist, done: "", created: nowStamp() };
+    function done() { rowsT.push(t); updateCounts(); toast(live ? "Задача добавлена" : "Пример: в таблицу не пишу"); route(); }
+    if (!live) { done(); return; }
+    if (colT.id < 0 || colT.text < 0) { toast("На вкладке «Задачи» нет колонок ID и «Задача»", true); return; }
+    var width = Math.max.apply(null, Object.keys(colT).map(function (k) { return colT[k]; })) + 1;
+    readRange(TAB_T + "!A1:A2000").then(function (vals) {
+      vals = vals || []; var last = 1;
+      for (var i = 1; i < vals.length; i++) if (String(vals[i] && vals[i][0] || "").trim()) last = i + 1;
+      var row = new Array(width).fill(""), target = last + 1;
+      Object.keys(HT).forEach(function (k) { if (colT[k] >= 0) row[colT[k]] = t[k]; });
+      return call("update_values", { spreadsheetId: SHEET_ID, range: TAB_T + "!A" + target + ":" + colL(width - 1) + target, values: [row] });
+    }).then(done, function (err) { toast(errMsg(err), true); });
+  }
+  function taskRow(t) {
+    var done = !!t.done, tm = tTime(t), art = t.artist ? artistNames()[key(t.artist)] : null;
+    var chk = el("button", { "class": "chk" + (done ? " on" : ""), type: "button", "aria-pressed": done ? "true" : "false", "aria-label": "Выполнено", onclick: function (e) { toggleTask(t, e.currentTarget); } }, checkSvg());
+    var meta = el("div", { "class": "tm" }, el("span", { "class": tm ? "tag-time" : "tag-all", text: tm || "весь день" }));
+    var diff = dd(tDate(t), TODAY);
+    if (diff !== 0) meta.append(el("span", { "class": diff < 0 ? "late" : "", text: diff < 0 ? "просрочено " + days(-diff) : fmtShort(tDate(t)) }));
+    if (art) meta.append(el("button", { "class": "tag-art", type: "button", text: t.artist, onclick: function () { openArtist(art); } }));
+    else if (t.artist) meta.append(el("span", { text: t.artist }));
+    var acts = el("div", { "class": "tact" });
+    if (!done) acts.append(el("button", { "class": "mini", type: "button", text: diff < 0 ? "на сегодня" : "+1 день", onclick: function () { shiftTask(t); } }));
+    acts.append(el("button", { "class": "mini x", type: "button", "aria-label": "Удалить задачу", text: "×", onclick: function (e) {
+      var b = e.currentTarget;
+      if (b.dataset.ask) { removeTask(t); return; }
+      b.dataset.ask = "1"; b.textContent = "Удалить?";
+      setTimeout(function () { if (b.isConnected) { delete b.dataset.ask; b.textContent = "×"; } }, 3000);
+    } }));
+    return el("div", { "class": "task" + (done ? " done" : "") }, chk, el("div", { "class": "tb" }, el("div", { "class": "tt", text: t.text }), meta), acts);
+  }
+
+  var tf = { text: "", iso: toIso(TODAY), allDay: true, time: "12:00", artist: "" };
+  function renderTasks() {
+    var out = el("div");
+    var text = el("input", { "class": "search", type: "text", placeholder: "Что нужно сделать?", value: tf.text, autocomplete: "off", maxlength: "200" });
+    text.addEventListener("input", function () { tf.text = text.value; });
+    var dateIn = el("input", { "class": "mini-in", type: "date", value: tf.iso, "aria-label": "Дата" });
+    var chips = el("div", { "class": "chips" });
+    function drawDate() {
+      chips.replaceChildren();
+      [["Сегодня", 0], ["Завтра", 1]].forEach(function (o) {
+        var iso = toIso(addDays(TODAY, o[1]));
+        chips.append(el("button", { "class": "chip", type: "button", "aria-pressed": tf.iso === iso ? "true" : "false", text: o[0], onclick: function () { tf.iso = iso; dateIn.value = iso; drawDate(); } }));
+      });
+    }
+    dateIn.addEventListener("change", function () { if (dateIn.value) { tf.iso = dateIn.value; drawDate(); } });
+    var timeIn = el("input", { "class": "mini-in", type: "time", value: tf.time, "aria-label": "Время" });
+    timeIn.hidden = tf.allDay;
+    timeIn.addEventListener("input", function () { tf.time = timeIn.value; });
+    var seg = el("div", { "class": "seg" });
+    function drawSeg() {
+      seg.replaceChildren(
+        el("button", { type: "button", "aria-pressed": tf.allDay ? "true" : "false", text: "Весь день", onclick: function () { tf.allDay = true; drawSeg(); } }),
+        el("button", { type: "button", "aria-pressed": tf.allDay ? "false" : "true", text: "Ко времени", onclick: function () { tf.allDay = false; drawSeg(); } }));
+      timeIn.hidden = tf.allDay;
+    }
+    var dl = el("datalist", { id: "artlist" });
+    rowsA.slice().sort(function (a, b) { return a.name.localeCompare(b.name, "ru"); }).forEach(function (a) { dl.append(el("option", { value: a.name })); });
+    var artIn = el("input", { "class": "mini-in wide", type: "text", list: "artlist", placeholder: "Артист (необязательно)", value: tf.artist, autocomplete: "off" });
+    artIn.addEventListener("input", function () { tf.artist = artIn.value; });
+    function submit() {
+      var v = tf.text.trim();
+      if (!v) { toast("Напиши, что нужно сделать", true); text.focus(); return; }
+      if (!tf.allDay && !tf.time) { toast("Укажи время или выбери «Весь день»", true); return; }
+      var rec = { text: v, date: fromIso(tf.iso), time: tf.allDay ? "" : tf.time, artist: tf.artist.trim() };
+      tf.text = ""; tf.artist = "";
+      addTask(rec);
+    }
+    text.addEventListener("keydown", function (e) { if (e.key === "Enter") submit(); });
+    drawDate(); drawSeg();
+    out.append(el("div", { "class": "tform" }, text,
+      el("div", { "class": "line" }, chips, dateIn),
+      el("div", { "class": "line" }, seg, timeIn),
+      el("div", { "class": "line" }, artIn, dl, el("button", { "class": "btn primary", type: "button", text: "Добавить", onclick: submit }))));
+
+    var open = rowsT.filter(function (t) { return !t.done; }).sort(taskCmp);
+    var overdue = open.filter(function (t) { return dd(tDate(t), TODAY) < 0; });
+    var today = open.filter(function (t) { return dd(tDate(t), TODAY) === 0; });
+    var later = open.filter(function (t) { return dd(tDate(t), TODAY) > 0; });
+    var doneToday = rowsT.filter(function (t) { var d = t.done ? pd(t.done) : null; return d && dd(d, TODAY) === 0; }).sort(taskCmp);
+    var all = today.length + doneToday.length;
+    if (overdue.length) {
+      var sec = section("Просрочено", overdue.length, limited(overdue.map(taskRow), 10));
+      sec.append(el("div", { "class": "actions" }, el("button", { "class": "btn sm", type: "button", text: "Перенести все на сегодня", onclick: function () { moveOverdue(overdue); } })));
+      out.append(sec);
+    }
+    var tsec = section("Сегодня", all ? doneToday.length + " из " + all : "", today.length ? limited(today.map(taskRow), 30) : el("div", { "class": "list" }, el("div", { "class": "empty", text: all ? "На сегодня всё сделано." : "На сегодня задач нет." })));
+    if (all) {
+      var fill = el("i"), bar = el("div", { "class": "prog" }, fill);
+      tsec.insertBefore(bar, tsec.children[1]);
+      requestAnimationFrame(function () { requestAnimationFrame(function () { fill.style.width = Math.round(doneToday.length / all * 100) + "%"; }); });
+    }
+    out.append(tsec);
+    if (later.length) out.append(section("Дальше", later.length, limited(later.map(taskRow), 8)));
+    if (doneToday.length) out.append(section("Выполнено сегодня", doneToday.length, limited(doneToday.map(taskRow), 8)));
+    if (!rowsT.length) out.append(el("p", { "class": "hint", text: "Пока ни одной задачи. Добавь первую выше." }));
+    view.replaceChildren(out);
+  }
+
+  // ---------- found candidates ----------
+  function promote(c) {
+    var inA = artistNames()[key(c.name)];
+    if (inA) return save(TAB_S, c, [{ k: "decision", v: "Пишем" }], "Этот артист уже есть в Artists, решение отметил");
+    var t = tgUrl(c.tg), ig = safeUrl(c.ig);
+    var rec = { name: c.name, resp: c.finder || RESP_DEFAULT, status: "Не написал", tg: t ? t.handle : "", ig: ig || "", label: c.drop || "", ym: c.ym || "", comment: c.comment || "", photo: c.photo || "" };
+    toast("Переношу в Artists…");
+    function done() {
+      c.decision = "Пишем"; burst();
+      var fresh = { row: 0 }; Object.keys(HA).forEach(function (k) { fresh[k] = rec[k] || ""; });
+      rowsA.push(fresh); updateCounts();
+      toast(live ? "Добавил в Artists со статусом «Не написал»" : "Пример: в таблицу не пишу");
+      route();
+    }
+    if (!live) { done(); return; }
+    var width = Math.max.apply(null, Object.keys(colA).map(function (k) { return colA[k]; })) + 1;
+    readRange(TAB_A + "!A1:A1000").then(function (vals) {
+      vals = vals || [];
+      var last = 1, exists = false;
+      for (var i = 1; i < vals.length; i++) { var v = String(vals[i] && vals[i][0] || "").trim(); if (v) { last = i + 1; if (key(v) === key(c.name)) exists = true; } }
+      if (exists) return Promise.reject({ message: "«" + c.name + "» уже есть в Artists" });
+      var row = new Array(width).fill("");
+      Object.keys(rec).forEach(function (k) { if (colA[k] >= 0) row[colA[k]] = rec[k]; });
+      var target = last + 1;
+      return call("update_values", { spreadsheetId: SHEET_ID, range: TAB_A + "!A" + target + ":" + colL(width - 1) + target, values: [row] }).then(function () {
+        return findRow(TAB_S, colS.name, c.name);
+      }).then(function (srow) {
+        if (srow && colS.decision >= 0) return writeCell(TAB_S, colS.decision, srow, "Пишем");
+      });
+    }).then(done, function (err) { toast(errMsg(err), true); });
+  }
+
+  function deltaEditor(tab, c) {
+    var dRow = el("div", { "class": "dline" });
+    var dIn = el("input", { "class": "mini-in", type: "text", placeholder: "+ / −", value: parseDelta(c.delta) != null ? String(parseDelta(c.delta)) : (c.delta || ""), autocomplete: "off", "aria-label": "Дельта за месяц" });
+    function saveDelta() {
+      var raw = dIn.value.trim(), n = parseDelta(raw);
+      save(tab, c, [{ k: "delta", v: raw === "" ? "" : (n != null ? String(n) : raw) }], "Дельта сохранена");
+    }
+    dIn.addEventListener("keydown", function (e) { if (e.key === "Enter") saveDelta(); });
+    var tip = el("span", { "class": "tipwrap" });
+    var pop = el("span", { "class": "pop", role: "tooltip", hidden: true, text: "Сколько слушателей за месяц прибавилось или ушло. Цифра берётся из карточки артиста в Яндекс Музыке. Например: +12000 или -800." });
+    var q = el("button", { "class": "q", type: "button", "aria-label": "Что это за дельта", text: "?", onclick: function (e) {
+      e.stopPropagation(); var open = pop.hidden; pop.hidden = !open;
+      if (open) { var close = function () { pop.hidden = true; document.removeEventListener("click", close); }; setTimeout(function () { document.addEventListener("click", close); }, 0); }
+    } });
+    tip.append(q, pop);
+    dRow.append(el("b", { "class": "dl", text: "Дельта" }), tip);
+    if (String(c.delta || "").trim() !== "") dRow.append(el("b", { "class": deltaCls(c.delta), text: deltaText(c.delta) }));
+    dRow.append(dIn, el("button", { "class": "mini", type: "button", text: "Сохранить", onclick: saveDelta }));
+    return dRow;
+  }
+  function removeFindBlock(c) {
+    var box = el("div", { "class": "text" });
+    function draw(ask) {
+      box.replaceChildren(el("h4", { text: "Убрать из Поиска" }));
+      if (!ask) { box.append(el("button", { "class": "btn sm bad", type: "button", text: "Удалить из Поиска", onclick: function () { draw(true); } })); return; }
+      box.append(el("p", { text: "Строка «" + c.name + "» удалится из вкладки «Поиск». Если ты просто не берёшь артиста, лучше нажми «Не берём»: тогда он не появится снова и история останется." }),
+        el("div", { "class": "actions" },
+          el("button", { "class": "btn sm bad", type: "button", text: "Да, удалить", onclick: function (e) { e.currentTarget.disabled = true; removeFind(c); } }),
+          el("button", { "class": "btn sm", type: "button", text: "Отмена", onclick: function () { draw(false); } })));
+    }
+    draw(false);
+    return box;
+  }
+  function removeFind(c) {
+    toast("Удаляю…");
+    function done() {
+      var i = rowsS.indexOf(c); if (i >= 0) rowsS.splice(i, 1);
+      updateCounts(); toast(live ? "Удалил из Поиска" : "Пример: в таблицу не пишу");
+      if (location.hash.slice(1) === lastTab) route(); else location.hash = lastTab;
+    }
+    if (!live) { done(); return; }
+    findRow(TAB_S, colS.name, c.name).then(function (row) {
+      if (!row) return Promise.reject({ message: "«" + c.name + "» не найден в таблице, обнови страницу" });
+      if (row === 2) {
+        // row 2 holds the ARRAYFORMULAs (ratio, "в Artists"): clear the data cells instead of deleting the row
+        var chain = Promise.resolve();
+        Object.keys(HS).forEach(function (k) { if (k === "ratio" || colS[k] < 0) return; chain = chain.then(function () { return writeCell(TAB_S, colS[k], 2, ""); }); });
+        return chain;
+      }
+      return mcpH.callTool(SERVER, "update_spreadsheet", { spreadsheetId: SHEET_ID, requests: [{ deleteDimension: { range: { sheetId: GID_S, dimension: "ROWS", startIndex: row - 1, endIndex: row } } }] }, { cache: false });
+    }).then(done, function (err) { toast(errMsg(err), true); route(); });
+  }
+  function renderFind(i) {
+    var c = rowsS[i];
+    if (!c) { view.replaceChildren(el("div", { "class": "empty", text: "Артист не найден." })); return; }
+    var inA = artistNames()[key(c.name)];
+    var out = el("div");
+    out.append(el("button", { "class": "back", type: "button", text: "← К списку", onclick: function () { location.hash = lastTab; } }));
+    var head = el("div", { "class": "cardhead" }, avatar(c.name, true), el("h2", { text: c.name }));
+    var meta = el("div", { "class": "meta" });
+    var d = pd(c.date); if (d) meta.append(el("span", { text: "найден " + fmtFull(d) }));
+    if (c.finder) meta.append(el("span", { text: "· нашёл: " + c.finder }));
+    if (c.found) meta.append(el("span", { text: "· " + c.found }));
+    if (c.drop) meta.append(el("span", { text: "· " + c.drop }));
+    if (c.decision) meta.append(el("span", { "class": "pill s-" + (c.decision === "Пишем" ? "signed" : c.decision === "Смотрю" ? "dialog" : "none"), text: c.decision }));
+    head.append(meta); out.append(head);
+
+    var actions = el("div", { "class": "actions" });
+    var ym = /^https:\/\/music\.yandex\.ru\/artist\/\d+/.test(c.ym) ? c.ym : null;
+    if (ym) actions.append(linkBtn(ym, "Яндекс Музыка", true));
+    else if (safeUrl(c.ym)) actions.append(linkBtn(c.ym, "ЯМ (ссылка не на артиста)"));
+    var ig = safeUrl(c.ig), tt = safeUrl(c.tt), t = tgUrl(c.tg);
+    if (ig) actions.append(linkBtn(ig, "Инстаграм"));
+    if (tt) actions.append(linkBtn(tt, "ТикТок"));
+    if (t) actions.append(linkBtn(t.url, "Телеграм " + t.handle));
+    out.append(actions);
+
+    var n = pnum(c.listeners), l = pnum(c.likes);
+    var m = el("div", { "class": "row" },
+      el("div", null, bigEl(n), el("div", { "class": "small", text: "слушателей" })),
+      el("div", null, bigEl(l), el("div", { "class": "small", text: "лайков" })),
+      el("div", null, el("div", { "class": "big", text: n && l != null ? (l / n * 100).toFixed(1).replace(".", ",") + "%" : "—" }), el("div", { "class": "small", text: "лайки / слушатели" })));
+    var mbox = el("div", { "class": "metrics" }, m);
+    var subs = [["Инст", c.igf], ["ТТ", c.ttf], ["ТГ", c.tgf]].filter(function (x) { return pnum(x[1]) != null; }).map(function (x) { return x[0] + " " + num(pnum(x[1])); });
+    if (subs.length) mbox.append(el("div", { "class": "small", text: "Подписчики: " + subs.join(" · ") }));
+    mbox.append(deltaEditor(TAB_S, c));
+    if (c.dyn) mbox.append(el("div", { "class": "small", text: "Динамика: " + c.dyn }));
+    out.append(mbox);
+    if (c.comment) out.append(el("div", { "class": "text" }, el("h4", { text: "Комментарий" }), el("p", { text: c.comment })));
+
+    var dec = el("div", { "class": "panel" }, el("p", { "class": "t", text: "Решение" }));
+    if (inA) {
+      dec.append(el("p", { "class": "hint", text: "Он уже в Artists со статусом «" + (inA.status || "—") + "»." }),
+        el("div", { "class": "row" }, el("button", { "class": "btn sm", type: "button", text: "Открыть карточку", onclick: function () { openArtist(inA); } })));
+    } else {
+      var row = el("div", { "class": "row" });
+      row.append(el("button", { "class": "btn sm primary", type: "button", text: "Пишем: в Artists", onclick: function () { promote(c); } }));
+      row.append(el("button", { "class": "btn sm", type: "button", text: "Смотрю", onclick: function () { save(TAB_S, c, [{ k: "decision", v: "Смотрю" }]); } }));
+      row.append(el("button", { "class": "btn sm bad", type: "button", text: "Не берём", onclick: function () { save(TAB_S, c, [{ k: "decision", v: "Не берём" }]); } }));
+      if (c.decision) row.append(el("button", { "class": "btn sm", type: "button", text: "Сбросить", onclick: function () { save(TAB_S, c, [{ k: "decision", v: "" }]); } }));
+      dec.append(row, el("p", { "class": "hint", text: "«Пишем» создаёт строку в Artists: статус «Не написал», ответственный " + (c.finder || RESP_DEFAULT) + ", ссылки и лейбл из Поиска." }));
+    }
+    out.append(dec);
+    out.append(removeFindBlock(c));
+    view.replaceChildren(out);
+    window.scrollTo(0, 0);
+  }
+
+  // ---------- routing ----------
+  var TABS = ["today", "tasks", "artists", "search", "mine"];
+  function route() {
+    var h = location.hash.slice(1) || "today", ma = h.match(/^artist-(\d+)$/), mf = h.match(/^find-(\d+)$/);
+    var tab = ma || mf ? lastTab : (TABS.indexOf(h) >= 0 ? h : "today");
+    if (!ma && !mf) lastTab = tab;
+    TABS.forEach(function (t) {
+      var b = document.getElementById("tab-" + t);
+      if (t === tab) b.setAttribute("aria-current", "page"); else b.removeAttribute("aria-current");
+    });
+    document.getElementById("ind").style.transform = "translateX(" + TABS.indexOf(tab) * 100 + "%)";
+    updateBusy();
+    if (!loaded) { skeleton(); return; }
+    var y = window.scrollY;
+    if (ma) renderCard(+ma[1]);
+    else if (mf) renderFind(+mf[1]);
+    else if (tab === "artists") renderArtists();
+    else if (tab === "search") renderSearch();
+    else if (tab === "tasks") renderTasks();
+    else if (tab === "mine") renderMine();
+    else renderToday();
+    animateView(!!(ma || mf), h);
+    if (!ma && !mf) window.scrollTo(0, y);
+  }
+  document.querySelectorAll("nav.bar button").forEach(function (b) { b.addEventListener("click", function () { location.hash = b.getAttribute("data-tab"); }); });
+  window.addEventListener("hashchange", function () { route(); if (!/^(artist|find)-/.test(location.hash.slice(1))) window.scrollTo(0, 0); });
+  document.getElementById("refresh").addEventListener("click", load);
+  document.getElementById("datestr").textContent = longDate(TODAY);
+  route();
+  load();
+})();
+</script>
+</body>
+</html>
