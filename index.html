@@ -278,7 +278,7 @@ nav.bar button { font-size: 12.5px; padding: 12px 0; }
   <button type="button" data-tab="tasks" id="tab-tasks">Задачи<span class="n" id="n-tasks"></span></button>
   <button type="button" data-tab="artists" id="tab-artists">Артисты<span class="n" id="n-artists"></span></button>
   <button type="button" data-tab="search" id="tab-search">Поиск<span class="n" id="n-search"></span></button>
-  <button type="button" data-tab="mine" id="tab-mine">Мои<span class="n" id="n-mine"></span></button>
+  <button type="button" data-tab="mine" id="tab-mine">Ростер<span class="n" id="n-mine"></span></button>
 </div></nav>
 
 <script>
@@ -291,6 +291,17 @@ nav.bar button { font-size: 12.5px; padding: 12px 0; }
   var GID_A = 1000001;   // sheetId of the Artists tab, needed to delete a row
   var TAB_A = "Artists", TAB_S = "Поиск", TAB_T = "Задачи";
   var RESP_DEFAULT = "Саша";
+  var IS_WEB = true;   // true in the Telegram build, where the server tells who is asking
+  var ME = { name: RESP_DEFAULT, admin: true, role: "админ" };   // in the artifact everyone is the lead
+  function same(a, b) { return String(a || "").trim().toLowerCase() === String(b || "").trim().toLowerCase(); }
+  function isMine(a) { return a.resp ? same(a.resp, ME.name) : ME.admin; }
+  function canEdit(a) { return ME.admin || isMine(a); }
+  function mineFind(c) { return c.finder ? same(c.finder, ME.name) : ME.admin; }
+  function setMe(info) {
+    if (!info || !info.name) return;
+    ME = { name: String(info.name).trim(), admin: !!info.admin, role: info.role || "" };
+    nf.finder = ME.name;
+  }
   var OWNERS = ["Саша", "Ваня", "Коля", "Никита"];   // replaced by Списки!B on load; new names can be added from the form
   function ownersAll() {
     var out = OWNERS.slice();
@@ -299,7 +310,7 @@ nav.bar button { font-size: 12.5px; padding: 12px 0; }
     return out;
   }
   function rememberOwner(name) {
-    if (!name || OWNERS.indexOf(name) >= 0) return;
+    if (!name || OWNERS.indexOf(name) >= 0 || !ME.admin) return;
     OWNERS.push(name);
     if (!live) return;
     readRange("Списки!B1:B60").then(function (v) {
@@ -321,7 +332,7 @@ nav.bar button { font-size: 12.5px; padding: 12px 0; }
   // column headers in the sheet. Columns are found by these names, so moving or inserting columns in the sheet does not break the app.
   var HA = { name: "Артист", resp: "Ответственный", status: "Статус", first: "Дата первого касания", next: "Следующее касание", meet: "Созвон/встреча (дата и время)", who: "Кто на связи", tg: "ТГ", ig: "Инст", vk: "ВК", mail: "Почта", chan: "Основной канал", extra: "Доп. контакты", label: "Текущий лейбл", tag: "Тег (причина/итог)", offer: "Оффер", debt: "Долг треков", drop: "Дата последнего дропа", last: "Последний контакт", comment: "Коммент", log: "Лог касаний", why: "Чем интересен", problem: "Текущая проблема", propose: "Что можем предложить", known: "Что известно сейчас", ym: "Ссылка ЯМ", photo: "Фото", delta: "Дельта (мес.)" };
   var HS = { date: "Дата находки", name: "Артист", drop: "Ласт дроп дист", ym: "ЯМ", ig: "Инст", tt: "ТТ", tg: "ТГ", listeners: "Слушатели", likes: "Лайки", ratio: "Лайки/слуш", delta: "Дельта", igf: "Инст подп", ttf: "ТТ подп", tgf: "ТГ подп", found: "FOUND", comment: "Коммент", dyn: "Динамика", decision: "Решение", photo: "Фото", finder: "Кто нашёл" };
-  var HT = { id: "ID", text: "Задача", date: "Дата", time: "Время", artist: "Артист", done: "Готово", created: "Создано" };
+  var HT = { id: "ID", text: "Задача", date: "Дата", time: "Время", artist: "Артист", done: "Готово", created: "Создано", who: "Кто" };
 
   // sample data, used only when the sheet cannot be read
   var SAMPLE_A = [
@@ -410,7 +421,7 @@ nav.bar button { font-size: 12.5px; padding: 12px 0; }
     for (var i = 1; i < vals.length; i++) {
       var r = vals[i] || [], o = { row: i + 1 };
       Object.keys(spec).forEach(function (k) { var c = cols[k]; o[k] = c >= 0 && r[c] != null ? String(r[c]).trim() : ""; });
-      if (o[req || "name"]) out.push(o);
+      var kv = o[req || "name"]; if (kv && String(kv).replace(/\u200b/g, "").trim()) out.push(o);
     }
     return { cols: cols, rows: out };
   }
@@ -596,6 +607,7 @@ nav.bar button { font-size: 12.5px; padding: 12px 0; }
     if (code === "network") return "Нет связи с таблицей.";
     if (code === "busy") return "Таблица занята, попробуй ещё раз.";
     if (code === "approval_required" || code === "consent_required") return "Нужно разрешить странице работать с Google Sheets.";
+    if (code === "forbidden") return "Это может менять только тот, кто ведёт артиста.";
     if (code === "not_in_manifest") return "Доступ к таблице для этой страницы выключен.";
     if (code === "server_not_connected") return "Google Sheets не подключён. Добавь его в claude.ai: Settings → Connectors.";
     if (code === "needs_reauth") return "Доступ к Google Sheets истёк. Переподключи его в claude.ai: Settings → Connectors.";
@@ -612,11 +624,18 @@ nav.bar button { font-size: 12.5px; padding: 12px 0; }
   var API = { callTool: function (server, tool, input) {
     return fetch(API_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ initData: TG_INIT, tool: tool, input: input }) })
       .then(function (r) { return r.text(); }, function () { throw { code: "network", message: "нет связи" }; })
-      .then(function (t) { var j; try { j = JSON.parse(t); } catch (e) { throw { code: "api", message: "сервер ответил не так, как ждали" }; } if (j && j.error) throw { code: j.code || "api", message: j.error }; return { payload: j.result }; });
+      .then(function (t) { var j; try { j = JSON.parse(t); } catch (e) { throw { code: "api", message: "сервер ответил не так, как ждали" }; } if (j && j.error) throw { code: j.code || "api", message: j.error, tgId: j.tgId }; return { payload: j.result }; });
   } };
   // ---------- sheet access ----------
   function call(tool, input) { return mcpH.callTool(SERVER, tool, input, { cache: false }); }
-  function readRange(range) { return call("get_values", { spreadsheetId: SHEET_ID, range: range }).then(unpack); }
+  var meReady = Promise.resolve();
+  function fetchMe() {
+    return mcpH.callTool(SERVER, "whoami", {}, { cache: false }).then(function (res) {
+      var p = res && res.payload; if (typeof p === "string") { try { p = JSON.parse(p); } catch (e) {} }
+      setMe(p);
+    });
+  }
+  function readRange(range) { return meReady.then(function () { return call("get_values", { spreadsheetId: SHEET_ID, range: range }); }).then(unpack); }
   function writeCell(tab, colIdx, row, value) {
     return call("update_values", { spreadsheetId: SHEET_ID, range: tab + "!" + colL(colIdx) + row, values: [[value]] });
   }
@@ -668,7 +687,7 @@ nav.bar button { font-size: 12.5px; padding: 12px 0; }
   function setData(valsA, valsS, fromSheet, valsT) {
     var A = parseTable(valsA, HA), S = valsS ? parseTable(valsS, HS) : { cols: mapCols([], HS), rows: [] };
     var T = valsT ? parseTable(valsT, HT, "text") : { cols: mapCols([], HT), rows: [] };
-    rowsA = A.rows; colA = A.cols; rowsS = S.rows; colS = S.cols; rowsT = T.rows; colT = T.cols; live = fromSheet;
+    rowsA = A.rows; colA = A.cols; rowsS = S.rows; colS = S.cols; rowsT = T.rows.filter(function (t) { return t.who ? same(t.who, ME.name) : ME.admin; }); colT = T.cols; live = fromSheet;
     loaded = true; updateCounts(); route();
   }
   function useSample(msg, action) {
@@ -681,10 +700,12 @@ nav.bar button { font-size: 12.5px; padding: 12px 0; }
     Promise.resolve(API).then(function (mcp) {
       if (!mcp) { useSample("Нет доступа к коннекторам в этом окне."); return; }
       mcpH = mcp;
+      meReady = IS_WEB ? fetchMe() : Promise.resolve();
+      meReady.catch(function () {});
       var pS = readRange(TAB_S + "!A1:T700").then(function (v) { return { v: v }; }, function (e) { return { err: e }; });
       var pL = readRange("Списки!B2:B60").then(function (v) { return v; }, function () { return null; });
       var pM = readRange("Metrics!A1:E5000").then(function (v) { return v; }, function () { return null; });
-      var pT = readRange(TAB_T + "!A1:G1000").then(function (v) { return { v: v }; }, function (e) { return { err: e }; });
+      var pT = readRange(TAB_T + "!A1:H1000").then(function (v) { return { v: v }; }, function (e) { return { err: e }; });
       return readRange(TAB_A + "!A1:AB300").then(function (valsA) {
         if (!Array.isArray(valsA) || valsA.length < 2) { useSample("Таблица ответила, но данных в формате, который я ждал, нет."); return; }
         return Promise.all([pS, pT, pL, pM]).then(function (r) {
@@ -703,6 +724,7 @@ nav.bar button { font-size: 12.5px; padding: 12px 0; }
         });
       }, function (err) {
         var code = err && err.code, retry = { label: "Попробовать снова", fn: load };
+        if (code === "unauthorized") { showNoAccess(err); return; }
         useSample(errMsg(err), code === "approval_required" || code === "consent_required" ? { label: "Разрешить доступ к таблице", fn: load } : (code === "server_unavailable" || code === "upstream_error" || code === "selection_required" || code === "network" || code === "busy" || code === "api" || !code) ? retry : null);
       });
     }, function () { useSample("Нет доступа к коннекторам."); });
@@ -737,7 +759,7 @@ nav.bar button { font-size: 12.5px; padding: 12px 0; }
     var nt = openTasksDue().length; document.getElementById("n-tasks").textContent = nt ? nt : "";
     document.getElementById("n-artists").textContent = rowsA.length ? rowsA.length : "";
     document.getElementById("n-mine").textContent = rowsA.length ? rowsA.filter(function (a) { return a.status === "Подписан"; }).length || "" : "";
-    var nf = newFinds().length;
+    var nf = newFinds().filter(mineFind).length;
     document.getElementById("n-search").textContent = nf ? nf : "";
   }
   function section(title, count, list) {
@@ -763,7 +785,7 @@ nav.bar button { font-size: 12.5px; padding: 12px 0; }
 
   function renderToday() {
     var due = [], nodate = [], silent = [], debt = [];
-    rowsA.forEach(function (a) {
+    rowsA.filter(isMine).forEach(function (a) {
       if (a.status === "Подписан" || a.status === "Отказ") { if (a.debt) debt.push(a); return; }
       var nd = pd(a.next), md = pd(a.meet);
       var when = null, what = "";
@@ -779,7 +801,7 @@ nav.bar button { font-size: 12.5px; padding: 12px 0; }
     });
     due.sort(function (x, y) { return x.when - y.when; });
     silent.sort(function (x, y) { return y.n - x.n; });
-    var finds = sortByDateDesc(newFinds());
+    var finds = sortByDateDesc(newFinds().filter(mineFind));
     var out = el("div");
     var tk = openTasksDue();
     var total = due.length + nodate.length + tk.length;
@@ -861,9 +883,9 @@ nav.bar button { font-size: 12.5px; padding: 12px 0; }
     toast("Добавляю…");
     var item = { row: 0 }; Object.keys(HS).forEach(function (k) { item[k] = rec[k] || ""; });
     if (String(item.delta).trim() !== "") { var dn = parseDelta(item.delta); if (dn != null) item.delta = String(dn); }
-    item.name = nm; item.date = fmtFull(TODAY); item.decision = ""; item.finder = rec.finder || RESP_DEFAULT;
+    item.name = nm; item.date = fmtFull(TODAY); item.decision = ""; item.finder = rec.finder || ME.name;
     function done() {
-      rowsS.push(item); nf = { name: "", drop: "", ym: "", ig: "", tt: "", tg: "", listeners: "", likes: "", delta: "", comment: "", finder: rec.finder || RESP_DEFAULT };
+      rowsS.push(item); nf = { name: "", drop: "", ym: "", ig: "", tt: "", tg: "", listeners: "", likes: "", delta: "", comment: "", finder: rec.finder || ME.name };
       sf.add = false; sf.st = "Новые"; sf.q = ""; burst(); updateCounts();
       toast(live ? "Добавил в Поиск" : "Пример: в таблицу не пишу"); route();
     }
@@ -906,7 +928,8 @@ nav.bar button { font-size: 12.5px; padding: 12px 0; }
       if (ownSel.value === "__new") { newOwn.hidden = false; nf.finder = newOwn.value.trim(); newOwn.focus(); }
       else { newOwn.hidden = true; nf.finder = ownSel.value; }
     });
-    box.append(field("name", "Имя артиста *"), ownSel, newOwn, field("drop", "Ласт дроп дист (лейбл)"), field("ym", "Ссылка на Яндекс Музыку"),
+    if (!ME.admin) nf.finder = ME.name;
+    box.append(field("name", "Имя артиста *"), ME.admin ? ownSel : null, ME.admin ? newOwn : null, field("drop", "Ласт дроп дист (лейбл)"), field("ym", "Ссылка на Яндекс Музыку"),
       el("div", { "class": "line" }, field("ig", "Инст"), field("tt", "ТТ"), field("tg", "ТГ")),
       el("div", { "class": "line" }, field("listeners", "Слушатели", "numeric"), field("likes", "Лайки", "numeric"), field("delta", "Дельта за месяц (+/−)")),
       field("comment", "Коммент"),
@@ -950,36 +973,76 @@ nav.bar button { font-size: 12.5px; padding: 12px 0; }
     var addBtn = el("button", { "class": "btn primary", type: "button", text: sf.add ? "Закрыть форму" : "+ Добавить артиста", onclick: function () { sf.add = !sf.add; renderSearch(); } });
     wrap.append(el("div", { "class": "actions", style: "margin-top:0" }, addBtn));
     if (sf.add) wrap.append(addFindForm());
-    wrap.append(el("div", { "class": "tools" }, search, ownChips(function () { renderSearch(); }), chips), listHost);
+    wrap.append(el("div", { "class": "tools" }, search, ME.admin ? ownChips(function () { renderSearch(); }) : null, chips), listHost);
     view.replaceChildren(wrap); draw();
   }
 
+  var mineScope = null;   // "my" | "all"
   function renderMine() {
-    var mine = rowsA.filter(function (a) { return a.status === "Подписан"; }).sort(function (x, y) { return x.name.localeCompare(y.name, "ru"); });
+    var signed = rowsA.filter(function (a) { return a.status === "Подписан"; }).sort(function (x, y) { return x.name.localeCompare(y.name, "ru"); });
+    if (mineScope === null) mineScope = signed.some(isMine) ? "my" : "all";
+    var scope = mineScope, mine = scope === "my" ? signed.filter(isMine) : signed;
     var out = el("div");
+    out.append(el("div", { "class": "seg" }, [["my", "Мои"], ["all", "Весь ростер"]].map(function (o) {
+      return el("button", { type: "button", "aria-pressed": scope === o[0] ? "true" : "false", text: o[1], onclick: function () { mineScope = o[0]; renderMine(); } });
+    })));
     if (!live) out.append(el("div", { "class": "banner demo" }, el("div", { text: "Это пример: цифры слушателей придуманы, чтобы показать дизайн." })));
-    else if (!mine.some(function (a) { return MET[a.name] && MET[a.name].length; })) out.append(el("div", { "class": "banner demo" }, el("div", { text: "В Metrics пока нет цифр по подписанным. Запусти ym_sync.py с российским VPN, и они появятся." })));
-    if (!mine.length) { out.append(el("div", { "class": "empty", text: "Подписанных пока нет." })); view.replaceChildren(out); return; }
+    else if (mine.length && !mine.some(function (a) { return MET[a.name] && MET[a.name].length; })) out.append(el("div", { "class": "banner demo" }, el("div", { text: "В Metrics пока нет цифр по этим артистам. Нужен запуск ym_sync.py." })));
+    if (!mine.length) { out.append(el("div", { "class": "empty", text: scope === "my" ? "У тебя пока нет подписанных. Посмотри «Весь ростер»." : "Подписанных пока нет." })); if (IS_WEB && ME.admin) out.append(inviteBlock()); view.replaceChildren(out); return; }
     var box = el("div", { "class": "list" });
     mine.forEach(function (a) {
+      var who = scope === "all" && a.resp ? " · ведёт " + a.resp : "";
       var item = el("button", { "class": "item", type: "button", onclick: function () { openArtist(a); } }, avatar(a.name), el("span", { "class": "nm", text: a.name }));
       if (!live) {
         var s = demoSeries(a.name, 60), last = s[s.length - 1], prev = s[s.length - 2], pct = (last - prev) / prev * 100;
-        item.append(el("span", { "class": "ds" }, num(last) + " слушателей ", el("span", { "class": pct >= 0 ? "up" : "down", text: (pct >= 0 ? "+" : "−") + Math.abs(pct).toFixed(1).replace(".", ",") + "% за сутки" })), el("span", { "class": "mt" }, spark(s.slice(-30))));
+        item.append(el("span", { "class": "ds" }, num(last) + " слушателей ", el("span", { "class": pct >= 0 ? "up" : "down", text: (pct >= 0 ? "+" : "−") + Math.abs(pct).toFixed(1).replace(".", ",") + "% за сутки" }), who), el("span", { "class": "mt" }, spark(s.slice(-30))));
       } else {
         var pts = MET[a.name];
-        if (!pts || !pts.length) item.append(el("span", { "class": "ds", text: "нет данных, проверь ссылку на ЯМ" }));
+        if (!pts || !pts.length) item.append(el("span", { "class": "ds", text: "нет данных, проверь ссылку на ЯМ" + who }));
         else {
           var p = pts[pts.length - 1], ds = el("span", { "class": "ds" }, num(p.l) + " слушателей ");
           if (p.dl != null) ds.append(el("span", { "class": p.dl >= 0 ? "up" : "down", text: (p.dl >= 0 ? "+" : "−") + num(Math.abs(p.dl)) + " за месяц" }));
+          if (who) ds.append(who);
           item.append(ds);
           if (pts.length > 1) item.append(el("span", { "class": "mt" }, spark(dailySeries(pts).slice(-30))));
         }
       }
       box.append(item);
     });
-    out.append(section("Подписаны", mine.length, box));
+    out.append(section(scope === "my" ? "Мои артисты" : "Весь ростер", mine.length, box));
+    if (IS_WEB && ME.admin) out.append(inviteBlock());
     view.replaceChildren(out);
+  }
+
+  // admin only: one-time link, the person who opens it first is added to the team
+  function inviteBlock() {
+    var box = el("div", { "class": "text" }, el("h4", { text: "Пригласить человека" }));
+    var name = el("input", { "class": "search", type: "text", placeholder: "Имя, как в таблице (например Ваня)", maxlength: "40", autocomplete: "off" });
+    var res = el("div");
+    var go = el("button", { "class": "btn sm primary", type: "button", text: "Создать ссылку", onclick: function () {
+      var nm = name.value.trim(); if (!nm) { toast("Напиши имя", true); return; }
+      go.disabled = true; toast("Создаю…");
+      mcpH.callTool(SERVER, "create_invite", { name: nm }, { cache: false }).then(function (r) {
+        var p = r && r.payload; if (typeof p === "string") { try { p = JSON.parse(p); } catch (e) {} }
+        go.disabled = false;
+        if (!p || !p.link) { toast("Не вышло создать ссылку", true); return; }
+        toast("Ссылка готова");
+        res.replaceChildren(el("p", { "class": "hint", text: "Одноразовая, живёт 7 дней. Отправь её " + p.name + " лично, первый, кто откроет, попадёт в команду." }),
+          el("div", { "class": "metrics" }, el("div", { "class": "small", text: p.link })),
+          el("div", { "class": "actions" }, copyBtn(p.link, "Скопировать ссылку")));
+      }, function (err) { go.disabled = false; toast(errMsg(err), true); });
+    } });
+    box.append(name, el("div", { "class": "actions" }, go), res);
+    return box;
+  }
+
+  // the server does not know this Telegram ID
+  function showNoAccess(err) {
+    loaded = true; updateBusy(); notice("", "");
+    var id = err && err.tgId ? String(err.tgId) : "";
+    var box = el("div", { "class": "hello" }, el("h2", { text: "Нет доступа" }), el("p", { text: "Тебя пока нет в команде. Попроси ссылку-приглашение у того, кто ведёт таблицу и открой апп по ней. Если ссылки нет, отправь ему свой Telegram ID." }));
+    if (id) box.append(el("div", { "class": "metrics", style: "margin-top:16px" }, el("div", { "class": "big", text: id }), el("div", { "class": "actions" }, copyBtn(id, "Скопировать ID"))));
+    view.replaceChildren(box);
   }
 
   function fact(label, content, wide) { return el("div", { "class": "fact" + (wide ? " wide" : "") }, el("span", { "class": "k", text: label }), content); }
@@ -999,6 +1062,8 @@ nav.bar button { font-size: 12.5px; padding: 12px 0; }
     if (a.label) meta.append(el("span", { text: a.label }));
     if (a.tag) meta.append(el("span", { text: "· " + a.tag }));
     head.append(meta); out.append(head);
+    var ro = !canEdit(a);
+    if (ro) out.append(el("div", { "class": "banner ok" }, el("div", { text: "Ведёт " + (a.resp || "—") + ". Карточку видно всей команде, править её может только он." })));
 
     // contact buttons: the main channel from the sheet goes first and is highlighted
     var cs = contacts(a), actions = el("div", { "class": "actions" });
@@ -1018,10 +1083,10 @@ nav.bar button { font-size: 12.5px; padding: 12px 0; }
     out.append(actions);
 
     // monthly listeners delta (signed artists get direct monitoring instead)
-    if (a.status !== "Подписан") out.append(el("div", { "class": "metrics" }, deltaEditor(TAB_A, a)));
+    if (a.status !== "Подписан" && !ro) out.append(el("div", { "class": "metrics" }, deltaEditor(TAB_A, a)));
 
     // quick touch: today's contact + when to come back
-    if (a.status !== "Подписан" && a.status !== "Отказ") {
+    if (a.status !== "Подписан" && a.status !== "Отказ" && !ro) {
       var panel = el("div", { "class": "panel" }, el("p", { "class": "t", text: "Написал сегодня. Вернуться через" }));
       var row = el("div", { "class": "row" });
       [[3, "3 дня"], [7, "неделю"], [14, "2 недели"], [0, "без даты"]].forEach(function (o) {
@@ -1047,6 +1112,7 @@ nav.bar button { font-size: 12.5px; padding: 12px 0; }
       var m = mt.value.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}:\d{2})/);
       save(TAB_A, a, [{ k: "meet", v: m ? m[3] + "." + m[2] + "." + m[1] + " " + m[4] : "" }], null, false);
     });
+    if (ro) { st.disabled = true; tg.disabled = true; nx.disabled = true; mt.disabled = true; }
     out.append(el("div", { "class": "facts" },
       fact("Статус", st), fact("Тег", tg),
       fact("Следующее касание", nx), fact("Созвон или встреча", mt),
@@ -1086,9 +1152,9 @@ nav.bar button { font-size: 12.5px; padding: 12px 0; }
       var t = note.value.trim(); if (!t) return;
       addLog(a, t, add);
     } });
-    out.append(el("div", { "class": "text" }, el("h4", { text: "Запись в лог касаний" }), note, add,
+    if (!ro) out.append(el("div", { "class": "text" }, el("h4", { text: "Запись в лог касаний" }), note, add,
       el("p", { "class": "hint", text: live ? "Запись уходит в таблицу с сегодняшней датой, последний контакт станет «сегодня»." : "Это пример, в таблицу ничего не пишется." })));
-    out.append(removeBlock(a));
+    if (!ro) out.append(removeBlock(a));
     view.replaceChildren(out);
     window.scrollTo(0, 0);
   }
@@ -1180,7 +1246,7 @@ nav.bar button { font-size: 12.5px; padding: 12px 0; }
   }
   function addTask(rec) {
     toast("Добавляю…");
-    var t = { row: 0, id: "t" + Date.now().toString(36), text: rec.text, date: rec.date, time: rec.time, artist: rec.artist, done: "", created: nowStamp() };
+    var t = { row: 0, id: "t" + Date.now().toString(36), text: rec.text, date: rec.date, time: rec.time, artist: rec.artist, done: "", created: nowStamp(), who: ME.name };
     function done() { rowsT.push(t); updateCounts(); toast(live ? "Задача добавлена" : "Пример: в таблицу не пишу"); route(); }
     if (!live) { done(); return; }
     if (colT.id < 0 || colT.text < 0) { toast("На вкладке «Задачи» нет колонок ID и «Задача»", true); return; }
@@ -1285,7 +1351,7 @@ nav.bar button { font-size: 12.5px; padding: 12px 0; }
     var inA = artistNames()[key(c.name)];
     if (inA) return save(TAB_S, c, [{ k: "decision", v: "Пишем" }], "Этот артист уже есть в Artists, решение отметил");
     var t = tgUrl(c.tg), ig = safeUrl(c.ig);
-    var rec = { name: c.name, resp: c.finder || RESP_DEFAULT, status: "Не написал", tg: t ? t.handle : "", ig: ig || "", label: c.drop || "", ym: c.ym || "", comment: c.comment || "", photo: c.photo || "" };
+    var rec = { name: c.name, resp: c.finder || ME.name, status: "Не написал", tg: t ? t.handle : "", ig: ig || "", label: c.drop || "", ym: c.ym || "", comment: c.comment || "", photo: c.photo || "" };
     toast("Переношу в Artists…");
     function done() {
       c.decision = "Пишем"; burst();
@@ -1412,7 +1478,7 @@ nav.bar button { font-size: 12.5px; padding: 12px 0; }
       row.append(el("button", { "class": "btn sm", type: "button", text: "Смотрю", onclick: function () { save(TAB_S, c, [{ k: "decision", v: "Смотрю" }]); } }));
       row.append(el("button", { "class": "btn sm bad", type: "button", text: "Не берём", onclick: function () { save(TAB_S, c, [{ k: "decision", v: "Не берём" }]); } }));
       if (c.decision) row.append(el("button", { "class": "btn sm", type: "button", text: "Сбросить", onclick: function () { save(TAB_S, c, [{ k: "decision", v: "" }]); } }));
-      dec.append(row, el("p", { "class": "hint", text: "«Пишем» создаёт строку в Artists: статус «Не написал», ответственный " + (c.finder || RESP_DEFAULT) + ", ссылки и лейбл из Поиска." }));
+      dec.append(row, el("p", { "class": "hint", text: "«Пишем» создаёт строку в Artists: статус «Не написал», ответственный " + (c.finder || ME.name) + ", ссылки и лейбл из Поиска." }));
     }
     out.append(dec);
     out.append(removeFindBlock(c));
