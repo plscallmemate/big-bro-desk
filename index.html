@@ -284,8 +284,8 @@ nav.bar button { font-size: 12.5px; padding: 12px 0; }
 </div>
 <div id="toast" class="toast" hidden role="status"></div>
 <nav class="bar" aria-label="Разделы"><div class="in"><span class="ind" id="ind"></span>
-  <button type="button" data-tab="today" id="tab-today">Сегодня</button>
-  <button type="button" data-tab="tasks" id="tab-tasks">Задачи<span class="n" id="n-tasks"></span></button>
+  <button type="button" data-tab="today" id="tab-today">Задачи</button>
+  <button type="button" data-tab="tasks" id="tab-tasks">Создать<span class="n" id="n-tasks"></span></button>
   <button type="button" data-tab="artists" id="tab-artists">Артисты<span class="n" id="n-artists"></span></button>
   <button type="button" data-tab="search" id="tab-search">Поиск<span class="n" id="n-search"></span></button>
   <button type="button" data-tab="mine" id="tab-mine">Ростер<span class="n" id="n-mine"></span></button>
@@ -531,7 +531,7 @@ nav.bar button { font-size: 12.5px; padding: 12px 0; }
     s.append(svg("polyline", { "class": "ln", pathLength: "1", points: pts.join(" ") }));
     return s;
   }
-  function kfmt(v) { return v >= 1000 ? (Math.round(v / 100) / 10).toString().replace(".", ",") + " тыс." : String(Math.round(v)); }
+  function axisFmt(v) { return v >= 1000 ? (Math.round(v / 100) / 10).toString().replace(".", ",") + " тыс." : String(Math.round(v)); }
   function chart(series, dropDate, n) {
     var W = 320, H = 156, L = 50, R = 10, T = 10, B = 24, mn = Math.min.apply(null, series), mx = Math.max.apply(null, series);
     var pad = (mx - mn) * 0.1 || 1; mn -= pad; mx += pad;
@@ -540,7 +540,7 @@ nav.bar button { font-size: 12.5px; padding: 12px 0; }
     var s = svg("svg", { "class": "chart", viewBox: "0 0 " + W + " " + H, role: "img", "aria-label": "График слушателей" });
     [mn + pad, (mn + mx) / 2, mx - pad].forEach(function (t) {
       s.append(svg("line", { "class": "grid", x1: L, x2: W - R, y1: Y(t), y2: Y(t) }));
-      var tx = svg("text", { "class": "lbl", x: L - 6, y: Y(t) + 3, "text-anchor": "end" }); tx.textContent = kfmt(t); s.append(tx);
+      var tx = svg("text", { "class": "lbl", x: L - 6, y: Y(t) + 3, "text-anchor": "end" }); tx.textContent = axisFmt(t); s.append(tx);
     });
     var pts = series.map(function (v, i) { return X(i).toFixed(1) + "," + Y(v).toFixed(1); });
     s.append(svg("polygon", { "class": "ar", points: pts.join(" ") + " " + X(series.length - 1) + "," + (H - B) + " " + X(0) + "," + (H - B) }));
@@ -1140,8 +1140,7 @@ nav.bar button { font-size: 12.5px; padding: 12px 0; }
       save(TAB_A, a, [{ k: "meet", v: m ? m[3] + "." + m[2] + "." + m[1] + " " + m[4] : "" }], null, false);
     });
     if (ro) { st.disabled = true; tg.disabled = true; nx.disabled = true; mt.disabled = true; }
-    if (sg) { if (!ro) out.append(el("div", { "class": "facts" }, fact("Статус", st))); }
-    else out.append(el("div", { "class": "facts" },
+    if (!sg) out.append(el("div", { "class": "facts" },
       fact("Статус", st), fact("Тег", tg),
       fact("Следующее касание", nx), fact("Созвон или встреча", mt),
       fact("Первое касание", el("span", { "class": "v", text: a.first || "—" })), fact("Последний контакт", el("span", { "class": "v", text: a.last || "—" })),
