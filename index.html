@@ -509,7 +509,7 @@ nav.bar button { font-size: 12.5px; padding: 12px 0; }
   function kfmt(n) {
     if (n == null) return "—";
     function one(x) { return x.toFixed(1).replace(".", ",").replace(/,0$/, ""); }
-    if (n >= 1e6) return one(n / 1e6) + " млн";
+    if (n >= 999950) return one(n / 1e6) + " млн";
     if (n >= 1e3) return one(n / 1e3) + " тыс";
     return num(n);
   }
@@ -1009,6 +1009,8 @@ nav.bar button { font-size: 12.5px; padding: 12px 0; }
     var signed = rowsA.filter(function (a) { return a.status === "Подписан"; }).sort(function (x, y) { return x.name.localeCompare(y.name, "ru"); });
     if (mineScope === null) mineScope = signed.some(isMine) ? "my" : "all";
     var scope = mineScope, mine = scope === "my" ? signed.filter(isMine) : signed;
+    function curL(a) { var pts = MET[a.name]; return live && pts && pts.length ? pts[pts.length - 1].l : live ? -1 : (function () { var s = demoSeries(a.name, 60); return s[s.length - 1]; })(); }
+    mine = mine.slice().sort(function (x, y) { return curL(y) - curL(x) || x.name.localeCompare(y.name, "ru"); });   // по слушателям, у кого данных нет, в конце
     var out = el("div");
     out.append(el("div", { "class": "seg" }, [["my", "Мои"], ["all", "Весь ростер"]].map(function (o) {
       return el("button", { type: "button", "aria-pressed": scope === o[0] ? "true" : "false", text: o[1], onclick: function () { mineScope = o[0]; renderMine(); } });
@@ -1087,7 +1089,7 @@ nav.bar button { font-size: 12.5px; padding: 12px 0; }
     if (a.label) meta.append(el("span", { text: a.label }));
     if (a.tag) meta.append(el("span", { text: "· " + a.tag }));
     head.append(meta); out.append(head);
-    var ro = !canEdit(a);
+    var ro = !canEdit(a), sg = a.status === "Подписан";   // подписанные: только статистика и заметки
     if (ro) out.append(el("div", { "class": "banner ok" }, el("div", { text: "Ведёт " + (a.resp || "—") + ". Карточку видно всей команде, править её может только он." })));
 
     // contact buttons: the main channel from the sheet goes first and is highlighted
@@ -1095,7 +1097,7 @@ nav.bar button { font-size: 12.5px; padding: 12px 0; }
     var want = a.chan === "Инст" ? "ig" : a.chan === "ВК" ? "vk" : a.chan === "Почта" ? "mail" : "tg";
     cs.sort(function (x, y) { return (x.kind === want ? 0 : 1) - (y.kind === want ? 0 : 1); });
     var firstDone = false;
-    cs.forEach(function (c) {
+    (sg ? [] : cs).forEach(function (c) {
       var primary = !firstDone && c.kind === want; if (primary) firstDone = true;
       if (c.kind === "tg") actions.append(linkBtn(c.url, "Написать" + (c.label ? " · " + c.label : " " + c.handle), primary));
       else if (c.kind === "ig") actions.append(linkBtn(c.url, primary ? "Написать в инсте" : "Инстаграм", primary));
@@ -1104,8 +1106,8 @@ nav.bar button { font-size: 12.5px; padding: 12px 0; }
     });
     var ymUrl = /^https:\/\/music\.yandex\.ru\/artist\/\d+/.test(a.ym) ? a.ym : null;
     if (ymUrl) actions.append(linkBtn(ymUrl, "Яндекс Музыка"));
-    if (!actions.children.length) actions.append(el("span", { "class": "hint", text: "В таблице нет контакта для этого артиста." }));
-    out.append(actions);
+    if (!actions.children.length && !sg) actions.append(el("span", { "class": "hint", text: "В таблице нет контакта для этого артиста." }));
+    if (actions.children.length) out.append(actions);
 
     // monthly listeners delta (signed artists get direct monitoring instead)
     if (a.status !== "Подписан" && !ro) out.append(el("div", { "class": "metrics" }, deltaEditor(TAB_A, a)));
@@ -1138,13 +1140,14 @@ nav.bar button { font-size: 12.5px; padding: 12px 0; }
       save(TAB_A, a, [{ k: "meet", v: m ? m[3] + "." + m[2] + "." + m[1] + " " + m[4] : "" }], null, false);
     });
     if (ro) { st.disabled = true; tg.disabled = true; nx.disabled = true; mt.disabled = true; }
-    out.append(el("div", { "class": "facts" },
+    if (sg) { if (!ro) out.append(el("div", { "class": "facts" }, fact("Статус", st))); }
+    else out.append(el("div", { "class": "facts" },
       fact("Статус", st), fact("Тег", tg),
       fact("Следующее касание", nx), fact("Созвон или встреча", mt),
       fact("Первое касание", el("span", { "class": "v", text: a.first || "—" })), fact("Последний контакт", el("span", { "class": "v", text: a.last || "—" })),
       fact("Оффер", el("span", { "class": "v", text: a.offer || "—" }), true),
       fact("Долг треков", el("span", { "class": "v", text: a.debt || "—" })), fact("Дата дропа", el("span", { "class": "v", text: a.drop || "—" }))));
-    if (a.meet && !md) out.append(el("p", { "class": "hint", text: "В таблице в поле встречи написано: «" + a.meet + "». Дату выбери выше." }));
+    if (a.meet && !md && !sg) out.append(el("p", { "class": "hint", text: "В таблице в поле встречи написано: «" + a.meet + "». Дату выбери выше." }));
 
     if (a.status === "Подписан" && live) {
       var pts = MET[a.name], rng = 30, holder = el("div");
@@ -1174,17 +1177,23 @@ nav.bar button { font-size: 12.5px; padding: 12px 0; }
     }
 
     var blocks = el("div", { "class": "text" });
-    [["Чем интересен", a.why], ["Проблема", a.problem], ["Что можем предложить", a.propose], ["Что известно сейчас", a.known], ["Комментарий", a.comment], ["Лог касаний", a.log]].forEach(function (b) {
+    if (!sg) [["Чем интересен", a.why], ["Проблема", a.problem], ["Что можем предложить", a.propose], ["Что известно сейчас", a.known], ["Комментарий", a.comment], ["Лог касаний", a.log]].forEach(function (b) {
       if (b[1]) blocks.append(el("h4", { text: b[0] }), el("p", { text: b[1] }));
     });
     out.append(blocks);
 
+    if (sg) {
+      var nt = el("textarea", { "class": "note", id: "f-note", placeholder: "Заметки по артисту" }); nt.value = a.comment || ""; if (ro) nt.disabled = true;
+      var nb = el("div", { "class": "text" }, el("h4", { text: "Заметки" }), nt);
+      if (!ro) nb.append(el("button", { "class": "btn", type: "button", text: "Сохранить заметку", onclick: function () { save(TAB_A, a, [{ k: "comment", v: nt.value.trim() }], null, false); } }));
+      out.append(nb);
+    }
     var note = el("textarea", { "class": "note", id: "f-note", placeholder: "Что произошло: ответил, созвонились, договорились…" });
     var add = el("button", { "class": "btn", type: "button", text: "Добавить в лог", onclick: function () {
       var t = note.value.trim(); if (!t) return;
       addLog(a, t, add);
     } });
-    if (!ro) out.append(el("div", { "class": "text" }, el("h4", { text: "Запись в лог касаний" }), note, add,
+    if (!ro && !sg) out.append(el("div", { "class": "text" }, el("h4", { text: "Запись в лог касаний" }), note, add,
       el("p", { "class": "hint", text: live ? "Запись уходит в таблицу с сегодняшней датой, последний контакт станет «сегодня»." : "Это пример, в таблицу ничего не пишется." })));
     if (!ro) out.append(removeBlock(a));
     view.replaceChildren(out);
