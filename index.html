@@ -123,6 +123,16 @@ body.busy .logo { animation: spin 1.1s linear infinite; }
 .item .mt { font-size: 13px; text-align: right; grid-row: 1 / span 2; grid-column: 3; color: var(--muted); }
 .mt.hot { color: var(--bad); font-weight: 600; }
 .mt.soon { color: var(--ink); font-weight: 600; }
+.rgrid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+@media (min-width: 560px) { .rgrid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+.tile { position: relative; aspect-ratio: 1; border: 0; padding: 0; border-radius: 18px; overflow: hidden; background: var(--surface2); text-align: left; color: #fff; transition: transform .15s; display: block; width: 100%; }
+.tile:active { transform: scale(.98); }
+.tile img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.tile .ph { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--font-head); font-size: 44px; color: #0C0C0F; letter-spacing: -0.04em; }
+.tile .cap { position: absolute; left: 0; right: 0; bottom: 0; padding: 30px 12px 10px; background: linear-gradient(to top, rgba(0, 0, 0, .8), rgba(0, 0, 0, 0)); display: flex; flex-direction: column; gap: 1px; }
+.tile .nm { font-weight: 600; font-size: 14px; line-height: 1.2; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.tile .ls { font-size: 12px; opacity: .85; }
+.tile .own { position: absolute; top: 8px; left: 8px; font-size: 11px; background: rgba(0, 0, 0, .55); padding: 2px 8px; border-radius: 999px; max-width: calc(100% - 16px); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .more { width: 100%; background: var(--surface2); border: 0; border-top: 1px solid var(--line); padding: 12px; color: var(--accent-t); font-weight: 600; transition: background .2s; }
 .more:active { background: var(--line); }
 
@@ -480,7 +490,8 @@ nav.bar button { font-size: 12.5px; padding: 12px 0; }
       var d = pd(r && r[0]), nm = String(r && r[1] || "").trim(); if (!d || !nm) return;
       var l = pnum(r[2]), dl = parseInt(String(r[3] == null ? "" : r[3]).replace(/[\s\u00a0]/g, "").replace("\u2212", "-"), 10), k = pnum(r[4]);
       if (l == null) return;
-      (out[nm] = out[nm] || []).push({ d: d, l: l, dl: isNaN(dl) ? null : dl, k: k });
+      var rt = String(r[5] == null ? "" : r[5]).trim();
+      (out[nm] = out[nm] || []).push({ d: d, l: l, dl: isNaN(dl) ? null : dl, k: k, rel: rt ? { t: rt, k: pnum(r[6]), d: String(r[7] == null ? "" : r[7]).trim() } : null });
     });
     Object.keys(out).forEach(function (nm) {
       out[nm].sort(function (a, b) { return a.d - b.d; });
@@ -489,6 +500,18 @@ nav.bar button { font-size: 12.5px; padding: 12px 0; }
       out[nm] = u;
     });
     return out;
+  }
+  function lastRelease(name) {
+    var pts = MET[name] || [];
+    for (var i = pts.length - 1; i >= 0; i--) if (pts[i].rel) return pts[i].rel;
+    return null;
+  }
+  function kfmt(n) {
+    if (n == null) return "—";
+    function one(x) { return x.toFixed(1).replace(".", ",").replace(/,0$/, ""); }
+    if (n >= 1e6) return one(n / 1e6) + " млн";
+    if (n >= 1e3) return one(n / 1e3) + " тыс";
+    return num(n);
   }
   // one value per calendar day, gaps carry the last known value, runs up to today
   function dailySeries(pts) {
@@ -704,7 +727,7 @@ nav.bar button { font-size: 12.5px; padding: 12px 0; }
       meReady.catch(function () {});
       var pS = readRange(TAB_S + "!A1:T700").then(function (v) { return { v: v }; }, function (e) { return { err: e }; });
       var pL = readRange("Списки!B2:B60").then(function (v) { return v; }, function () { return null; });
-      var pM = readRange("Metrics!A1:E5000").then(function (v) { return v; }, function () { return null; });
+      var pM = readRange("Metrics!A1:H5000").then(function (v) { return v; }, function () { return null; });
       var pT = readRange(TAB_T + "!A1:H1000").then(function (v) { return { v: v }; }, function (e) { return { err: e }; });
       return readRange(TAB_A + "!A1:AB300").then(function (valsA) {
         if (!Array.isArray(valsA) || valsA.length < 2) { useSample("Таблица ответила, но данных в формате, который я ждал, нет."); return; }
@@ -789,8 +812,12 @@ nav.bar button { font-size: 12.5px; padding: 12px 0; }
       if (a.status === "Подписан" || a.status === "Отказ") { if (a.debt) debt.push(a); return; }
       var nd = pd(a.next), md = pd(a.meet);
       var when = null, what = "";
-      if (nd) { when = nd; what = "касание"; }
-      if (md && (a.status === "Созвон" || a.status === "Встреча") && (!when || md < when)) { when = md; what = a.status === "Созвон" ? "созвон" : "встреча"; }
+      var mtg = md && (a.status === "Созвон" || a.status === "Встреча");
+      if (mtg && md >= TODAY) { when = md; what = a.status === "Созвон" ? "созвон" : "встреча"; }   // назначенная встреча важнее старого «следующего касания»
+      else {
+        if (nd) { when = nd; what = "касание"; }
+        if (mtg && (!when || md < when)) { when = md; what = a.status === "Созвон" ? "созвон" : "встреча"; }
+      }
       if (when && dd(when, TODAY) <= 7) due.push({ a: a, when: when, what: what });
       if ((a.status === "Созвон" || a.status === "Встреча") && !(md && md >= TODAY) && !(nd && nd >= TODAY)) nodate.push(a);
       if ((a.status === "Написал" || HELD[a.status]) && a.tag === "молчит") {
@@ -989,25 +1016,23 @@ nav.bar button { font-size: 12.5px; padding: 12px 0; }
     if (!live) out.append(el("div", { "class": "banner demo" }, el("div", { text: "Это пример: цифры слушателей придуманы, чтобы показать дизайн." })));
     else if (mine.length && !mine.some(function (a) { return MET[a.name] && MET[a.name].length; })) out.append(el("div", { "class": "banner demo" }, el("div", { text: "В Metrics пока нет цифр по этим артистам. Нужен запуск ym_sync.py." })));
     if (!mine.length) { out.append(el("div", { "class": "empty", text: scope === "my" ? "У тебя пока нет подписанных. Посмотри «Весь ростер»." : "Подписанных пока нет." })); if (IS_WEB && ME.admin) out.append(inviteBlock()); view.replaceChildren(out); return; }
-    var box = el("div", { "class": "list" });
+    var box = el("div", { "class": "rgrid" });
     mine.forEach(function (a) {
-      var who = scope === "all" && a.resp ? " · ведёт " + a.resp : "";
-      var item = el("button", { "class": "item", type: "button", onclick: function () { openArtist(a); } }, avatar(a.name), el("span", { "class": "nm", text: a.name }));
-      if (!live) {
-        var s = demoSeries(a.name, 60), last = s[s.length - 1], prev = s[s.length - 2], pct = (last - prev) / prev * 100;
-        item.append(el("span", { "class": "ds" }, num(last) + " слушателей ", el("span", { "class": pct >= 0 ? "up" : "down", text: (pct >= 0 ? "+" : "−") + Math.abs(pct).toFixed(1).replace(".", ",") + "% за сутки" }), who), el("span", { "class": "mt" }, spark(s.slice(-30))));
-      } else {
-        var pts = MET[a.name];
-        if (!pts || !pts.length) item.append(el("span", { "class": "ds", text: "нет данных, проверь ссылку на ЯМ" + who }));
-        else {
-          var p = pts[pts.length - 1], ds = el("span", { "class": "ds" }, num(p.l) + " слушателей ");
-          if (p.dl != null) ds.append(el("span", { "class": p.dl >= 0 ? "up" : "down", text: (p.dl >= 0 ? "+" : "−") + num(Math.abs(p.dl)) + " за месяц" }));
-          if (who) ds.append(who);
-          item.append(ds);
-          if (pts.length > 1) item.append(el("span", { "class": "mt" }, spark(dailySeries(pts).slice(-30))));
-        }
+      var tile = el("button", { "class": "tile", type: "button", "aria-label": a.name, onclick: function () { openArtist(a); } });
+      var ph = photoOf(a.name);
+      if (ph) tile.append(el("img", { src: ph, alt: "" }));
+      else {
+        var h = hashStr(key(a.name)) % 360;
+        tile.style.background = "linear-gradient(135deg, hsl(" + h + " 85% 62%), hsl(" + ((h + 55) % 360) + " 90% 56%))";
+        var w = String(a.name).replace(/[^\p{L}\p{N} ]/gu, "").trim().split(/\s+/);
+        tile.append(el("span", { "class": "ph", text: ((w[0] ? w[0][0] : "?") + (w[1] ? w[1][0] : "")).toUpperCase() }));
       }
-      box.append(item);
+      if (scope === "all" && a.resp) tile.append(el("span", { "class": "own", text: a.resp }));
+      var ls;
+      if (!live) { var s = demoSeries(a.name, 60); ls = kfmt(s[s.length - 1]) + " слуш."; }
+      else { var pts = MET[a.name]; ls = pts && pts.length ? kfmt(pts[pts.length - 1].l) + " слуш." : "нет данных"; }
+      tile.append(el("span", { "class": "cap" }, el("span", { "class": "nm", text: a.name }), el("span", { "class": "ls", text: ls })));
+      box.append(tile);
     });
     out.append(section(scope === "my" ? "Мои артисты" : "Весь ростер", mine.length, box));
     if (IS_WEB && ME.admin) out.append(inviteBlock());
@@ -1139,6 +1164,13 @@ nav.bar button { font-size: 12.5px; padding: 12px 0; }
       };
       drawChart();
       out.append(el("section", { "class": "block" }, el("h3", null, el("span", { text: "Слушатели" }), el("span", { text: "Яндекс Музыка" })), el("div", { "class": "metrics" }, holder)));
+      var rel = lastRelease(a.name), rbox = el("div", { "class": "metrics" });
+      if (!rel) rbox.append(el("p", { "class": "hint", text: "Данных по релизам пока нет. Они подтянутся при следующем запуске ym_sync.py." }));
+      else {
+        rbox.append(el("div", { "class": "row" }, bigBox(rel.k == null ? "—" : num(rel.k), "", "лайков на релизе")),
+          el("div", { "class": "small", text: "«" + rel.t + "»" + (rel.d ? " · " + rel.d : "") }));
+      }
+      out.append(el("section", { "class": "block" }, el("h3", null, el("span", { text: "Последний релиз" }), el("span", { text: "Яндекс Музыка" })), rbox));
     }
 
     var blocks = el("div", { "class": "text" });
