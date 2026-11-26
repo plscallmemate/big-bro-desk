@@ -259,7 +259,8 @@ nav.bar .n { font-weight: 500; margin-left: 3px; font-size: 11.5px; opacity: .75
 .chk.on { background: var(--accent); border-color: var(--accent); }
 .chk .ckw { width: 18px; height: 18px; }
 .chk .ck { fill: none; stroke: var(--accent-ink); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset .3s ease .05s; }
-.chk.on .ck { stroke-dashoffset: 0; }
+.chk .ck { opacity: 0; }
+.chk.on .ck { stroke-dashoffset: 0; opacity: 1; }   /* без этого round-линия с нулевой длиной рисует точку в пустом кружке */
 .prog { height: 4px; border-radius: 2px; background: var(--line); overflow: hidden; margin: 0 0 10px; }
 .prog i { display: block; height: 100%; width: 0; background: var(--accent); border-radius: 2px; transition: width .8s cubic-bezier(.2, .8, .2, 1); }
 #view.in-tab .task, #view.in-card .task { animation: rise .45s cubic-bezier(.2, .8, .2, 1) both; animation-delay: calc(var(--i, 0) * 32ms); }
@@ -659,6 +660,11 @@ nav.bar button { font-size: 12.5px; padding: 12px 0; }
     return mcpH.callTool(SERVER, "whoami", {}, { cache: false }).then(function (res) {
       var p = res && res.payload; if (typeof p === "string") { try { p = JSON.parse(p); } catch (e) {} }
       setMe(p);
+      // боту нужно разрешение писать человеку в личку, иначе уведомления ему не дойдут; спросим один раз
+      try {
+        var tgw = window.Telegram && window.Telegram.WebApp, flag = "bb_wa_" + (p && p.name || "");
+        if (IS_WEB && tgw && tgw.requestWriteAccess && !localStorage.getItem(flag)) tgw.requestWriteAccess(function () { try { localStorage.setItem(flag, "1"); } catch (e) {} });
+      } catch (e) {}
     });
   }
   function readRange(range) { return meReady.then(function () { return call("get_values", { spreadsheetId: SHEET_ID, range: range }); }).then(unpack); }
@@ -1041,7 +1047,7 @@ nav.bar button { font-size: 12.5px; padding: 12px 0; }
     })));
     if (!live) out.append(el("div", { "class": "banner demo" }, el("div", { text: "Это пример: цифры слушателей придуманы, чтобы показать дизайн." })));
     else if (mine.length && !mine.some(function (a) { return MET[a.name] && MET[a.name].length; })) out.append(el("div", { "class": "banner demo" }, el("div", { text: "В Metrics пока нет цифр по этим артистам. Нужен запуск ym_sync.py." })));
-    if (!mine.length) { out.append(el("div", { "class": "empty", text: scope === "my" ? "Тут будут твои артисты. Открой «Весь ростер», выбери артиста и нажми «Взять себе»." : "Подписанных пока нет." })); if (IS_WEB && ME.admin) out.append(inviteBlock()); view.replaceChildren(out); return; }
+    if (!mine.length) { out.append(el("div", { "class": "empty", text: scope === "my" ? "Тут будут твои артисты. Открой «Весь ростер», выбери артиста и нажми «Взять себе»." : "Подписанных пока нет." })); if (IS_WEB && ME.admin) { out.append(inviteBlock()); out.append(notifyBlock()); } view.replaceChildren(out); return; }
     var box = el("div", { "class": "rgrid" });
     mine.forEach(function (a) {
       var tile = el("button", { "class": "tile", type: "button", "aria-label": a.name, onclick: function () { openArtist(a); } });
@@ -1061,7 +1067,7 @@ nav.bar button { font-size: 12.5px; padding: 12px 0; }
       box.append(tile);
     });
     out.append(section(scope === "my" ? "Мои артисты" : "Весь ростер", mine.length, box));
-    if (IS_WEB && ME.admin) out.append(inviteBlock());
+    if (IS_WEB && ME.admin) { out.append(inviteBlock()); out.append(notifyBlock()); }
     view.replaceChildren(out);
   }
 
@@ -1100,6 +1106,38 @@ nav.bar button { font-size: 12.5px; padding: 12px 0; }
     return box;
   }
 
+  // admin only: уведомления в Telegram. Показывает, включён ли утренний дайджест, кому и чем он ушёл в последний раз
+  function notifyBlock() {
+    var box = el("div", { "class": "text" }, el("h4", { text: "Уведомления в Telegram" }));
+    var info = el("div"), msg = el("p", { "class": "hint", text: "Загружаю…" });
+    function parse(r) { var p = r && r.payload; if (typeof p === "string") { try { p = JSON.parse(p); } catch (e) {} } return p; }
+    function draw(st) {
+      if (!st) { msg.textContent = "Не получил статус."; return; }
+      info.replaceChildren();
+      var rows = [];
+      rows.push(st.trigger ? "Утренний дайджест включён: каждый день около " + st.hour + ":00 (пояс скрипта: " + st.tz + ")." : "Утренний дайджест НЕ включён, поэтому ничего и не приходит. Нажми «Включить».");
+      if (!st.hasChat) rows.push("Не задан твой chat id в настройках скрипта (CHAT_ID), тебе дайджест слать не на кого.");
+      rows.push("Получатели: " + (st.recipients && st.recipients.length ? st.recipients.join(", ") : "никого") + ".");
+      if (st.log) {
+        var d = new Date(st.log.at); rows.push("Последняя рассылка: " + fmtShort(d) + " " + two(d.getHours()) + ":" + two(d.getMinutes()));
+        st.log.results.forEach(function (x) { rows.push((x.ok ? "✓ " : "✗ ") + x.name + (x.ok ? "" : ": " + x.err)); });
+      } else rows.push("Рассылка по расписанию ещё ни разу не срабатывала.");
+      rows.forEach(function (t) { info.append(el("p", { "class": "hint", text: t })); });
+      msg.textContent = "";
+    }
+    function load() { mcpH.callTool(SERVER, "notify_status", {}, { cache: false }).then(function (r) { draw(parse(r)); }, function (err) { msg.textContent = errMsg(err); }); }
+    var on = el("button", { "class": "btn sm primary", type: "button", text: "Включить", onclick: function () {
+      on.disabled = true; mcpH.callTool(SERVER, "notify_setup", {}, { cache: false }).then(function (r) { on.disabled = false; toast("Дайджест включён"); draw(parse(r)); }, function (err) { on.disabled = false; toast(errMsg(err), true); });
+    } });
+    var test = el("button", { "class": "btn sm", type: "button", text: "Отправить мне сейчас", onclick: function () {
+      test.disabled = true; toast("Отправляю…");
+      mcpH.callTool(SERVER, "notify_test", {}, { cache: false }).then(function (r) { test.disabled = false; var p = parse(r); if (p && p.ok) toast("Отправил, смотри в боте"); else toast("Не дошло: " + (p && p.err || "ошибка"), true); load(); }, function (err) { test.disabled = false; toast(errMsg(err), true); });
+    } });
+    box.append(msg, info, el("div", { "class": "actions" }, on, test));
+    load();
+    return box;
+  }
+
   // the server does not know this Telegram ID
   function showNoAccess(err) {
     loaded = true; updateBusy(); notice("", "");
@@ -1124,7 +1162,7 @@ nav.bar button { font-size: 12.5px; padding: 12px 0; }
     var meta = el("div", { "class": "meta" }, pill(a.status));
     if (a.resp) meta.append(el("span", { text: "ведёт: " + a.resp }));
     if (a.label) meta.append(el("span", { text: a.label }));
-    if (a.tag) meta.append(el("span", { text: "· " + a.tag }));
+    if (a.tag && a.status !== "Подписан") meta.append(el("span", { text: "· " + a.tag }));
     head.append(meta); out.append(head);
     var ro = !canEdit(a), sg = a.status === "Подписан";   // подписанные: только статистика и заметки
     if (ro) out.append(el("div", { "class": "banner ok" }, el("div", { text: "Ведёт " + (a.resp || "—") + ". Карточку видно всей команде, править её может только он. Если артист должен быть у тебя, попроси админа передать." })));
@@ -1135,7 +1173,7 @@ nav.bar button { font-size: 12.5px; padding: 12px 0; }
       var curW = !a.resp || isPoolName(a.resp) ? "Не закреплён" : a.resp; if (names.indexOf(curW) < 0) names.push(curW);
       names.forEach(function (n) { who.append(el("option", { value: n, text: n, selected: n === curW })); });
       who.addEventListener("change", function () { save(TAB_A, a, [{ k: "resp", v: who.value }], who.value === "Не закреплён" ? "Артист в общем пуле" : "Теперь ведёт " + who.value); });
-      out.append(el("div", { "class": "facts" }, fact("Кто ведёт", who)));
+      out.append(el("div", { "class": "facts" }, fact("Кто ведёт", who, true)));
     } else if (!a.resp || isShared(a)) {
       out.append(el("div", { "class": "actions" }, el("button", { "class": "btn primary", type: "button", text: "Взять себе", onclick: function (e) { e.currentTarget.disabled = true; save(TAB_A, a, [{ k: "resp", v: ME.name }], "Теперь артист у тебя, он во вкладке «Мои»"); } })));
     } else if (a.resp && same(a.resp, ME.name) && !isShared(a)) {
@@ -1494,6 +1532,8 @@ nav.bar button { font-size: 12.5px; padding: 12px 0; }
 
   function deltaEditor(tab, c) {
     var dRow = el("div", { "class": "dline" });
+    // цифру подтягивает ym_sync из Яндекса: руками её вводить не нужно, только если ссылки на ЯМ нет
+    var auto = /^https:\/\/music\.yandex\.ru\/artist\/\d+/.test(String(c.ym || ""));
     var dIn = el("input", { "class": "mini-in", type: "text", placeholder: "+ / −", value: parseDelta(c.delta) != null ? String(parseDelta(c.delta)) : (c.delta || ""), autocomplete: "off", "aria-label": "Дельта за месяц" });
     function saveDelta() {
       var raw = dIn.value.trim(), n = parseDelta(raw);
@@ -1508,7 +1548,9 @@ nav.bar button { font-size: 12.5px; padding: 12px 0; }
     } });
     tip.append(q, pop);
     dRow.append(el("b", { "class": "dl", text: "Дельта" }), tip);
-    if (String(c.delta || "").trim() !== "") dRow.append(el("b", { "class": deltaCls(c.delta), text: deltaText(c.delta) }));
+    var has = String(c.delta || "").trim() !== "";
+    if (has) dRow.append(el("b", { "class": deltaCls(c.delta), text: deltaText(c.delta) }));
+    if (auto) { if (!has) dRow.append(el("span", { "class": "hint", text: "появится после синхронизации с Яндексом" })); return dRow; }
     dRow.append(dIn, el("button", { "class": "mini", type: "button", text: "Сохранить", onclick: saveDelta }));
     return dRow;
   }
