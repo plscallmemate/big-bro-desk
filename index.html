@@ -88,9 +88,10 @@ button:disabled { opacity: .55; cursor: default; }
 #view.in-tab .item, #view.in-card .item { animation: rise .45s cubic-bezier(.2, .8, .2, 1) both; animation-delay: calc(var(--i, 0) * 32ms); }
 
 header.top {
-  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: var(--bg);
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 5; background: transparent;
   display: flex; align-items: flex-end; justify-content: space-between; gap: 12px; padding: 16px 0 12px;
 }
+header.top.stuck { background: var(--bg); box-shadow: 0 0 0 100vmax var(--bg); clip-path: inset(0 -100vmax); }   /* прозрачная шапка наверху, при прокрутке сплошная на всю ширину: без полос по бокам */
 .brandrow { display: flex; align-items: center; gap: 10px; }
 .brand { font-family: var(--font-head); font-weight: 400; font-size: 19px; letter-spacing: -0.045em; text-transform: uppercase; margin: 0; }
 .sub { color: var(--muted); font-size: 13px; margin: 3px 0 0; }
@@ -305,11 +306,13 @@ nav.bar button { font-size: 12.5px; padding: 12px 0; }
   var ME = { name: RESP_DEFAULT, admin: true, role: "админ" };   // in the artifact everyone is the lead
   function same(a, b) { return String(a || "").trim().toLowerCase() === String(b || "").trim().toLowerCase(); }
   function isMine(a) { return a.resp ? same(a.resp, ME.name) : ME.admin; }
-  function canEdit(a) { return ME.admin || isMine(a); }
+  function isPoolName(v) { return same(v, "Не закреплён") || same(v, "Не закреплен") || same(v, "ББР"); }
+  function isShared(a) { return isPoolName(a.resp); }   // общий пул: артист ни за кем, править может любой
+  function canEdit(a) { return ME.admin || isMine(a) || isShared(a); }
   function mineFind(c) { return c.finder ? same(c.finder, ME.name) : ME.admin; }
   function setMe(info) {
     if (!info || !info.name) return;
-    ME = { name: String(info.name).trim(), admin: !!info.admin, role: info.role || "" };
+    ME = { name: String(info.name).trim(), admin: !!info.admin, role: info.role || "", team: Array.isArray(info.team) ? info.team : [] };
     nf.finder = ME.name;
   }
   var OWNERS = ["Саша", "Ваня", "Коля", "Никита"];   // replaced by Списки!B on load; new names can be added from the form
@@ -342,7 +345,7 @@ nav.bar button { font-size: 12.5px; padding: 12px 0; }
   // column headers in the sheet. Columns are found by these names, so moving or inserting columns in the sheet does not break the app.
   var HA = { name: "Артист", resp: "Ответственный", status: "Статус", first: "Дата первого касания", next: "Следующее касание", meet: "Созвон/встреча (дата и время)", who: "Кто на связи", tg: "ТГ", ig: "Инст", vk: "ВК", mail: "Почта", chan: "Основной канал", extra: "Доп. контакты", label: "Текущий лейбл", tag: "Тег (причина/итог)", offer: "Оффер", debt: "Долг треков", drop: "Дата последнего дропа", last: "Последний контакт", comment: "Коммент", log: "Лог касаний", why: "Чем интересен", problem: "Текущая проблема", propose: "Что можем предложить", known: "Что известно сейчас", ym: "Ссылка ЯМ", photo: "Фото", delta: "Дельта (мес.)" };
   var HS = { date: "Дата находки", name: "Артист", drop: "Ласт дроп дист", ym: "ЯМ", ig: "Инст", tt: "ТТ", tg: "ТГ", listeners: "Слушатели", likes: "Лайки", ratio: "Лайки/слуш", delta: "Дельта", igf: "Инст подп", ttf: "ТТ подп", tgf: "ТГ подп", found: "FOUND", comment: "Коммент", dyn: "Динамика", decision: "Решение", photo: "Фото", finder: "Кто нашёл" };
-  var HT = { id: "ID", text: "Задача", date: "Дата", time: "Время", artist: "Артист", done: "Готово", created: "Создано", who: "Кто" };
+  var HT = { id: "ID", text: "Задача", date: "Дата", time: "Время", artist: "Артист", done: "Готово", created: "Создано", who: "Кто", author: "Поставил" };
 
   // sample data, used only when the sheet cannot be read
   var SAMPLE_A = [
@@ -710,7 +713,7 @@ nav.bar button { font-size: 12.5px; padding: 12px 0; }
   function setData(valsA, valsS, fromSheet, valsT) {
     var A = parseTable(valsA, HA), S = valsS ? parseTable(valsS, HS) : { cols: mapCols([], HS), rows: [] };
     var T = valsT ? parseTable(valsT, HT, "text") : { cols: mapCols([], HT), rows: [] };
-    rowsA = A.rows; colA = A.cols; rowsS = S.rows; colS = S.cols; rowsT = T.rows.filter(function (t) { return t.who ? same(t.who, ME.name) : ME.admin; }); colT = T.cols; live = fromSheet;
+    rowsA = A.rows; colA = A.cols; rowsS = S.rows; colS = S.cols; rowsT = T.rows.filter(function (t) { return t.who || t.author ? tVisible(t) : ME.admin; }); colT = T.cols; live = fromSheet;
     loaded = true; updateCounts(); route();
   }
   function useSample(msg, action) {
@@ -728,7 +731,7 @@ nav.bar button { font-size: 12.5px; padding: 12px 0; }
       var pS = readRange(TAB_S + "!A1:T700").then(function (v) { return { v: v }; }, function (e) { return { err: e }; });
       var pL = readRange("Списки!B2:B60").then(function (v) { return v; }, function () { return null; });
       var pM = readRange("Metrics!A1:H5000").then(function (v) { return v; }, function () { return null; });
-      var pT = readRange(TAB_T + "!A1:H1000").then(function (v) { return { v: v }; }, function (e) { return { err: e }; });
+      var pT = readRange(TAB_T + "!A1:I1000").then(function (v) { return { v: v }; }, function (e) { return { err: e }; });
       return readRange(TAB_A + "!A1:AB300").then(function (valsA) {
         if (!Array.isArray(valsA) || valsA.length < 2) { useSample("Таблица ответила, но данных в формате, который я ждал, нет."); return; }
         return Promise.all([pS, pT, pL, pM]).then(function (r) {
@@ -806,7 +809,25 @@ nav.bar button { font-size: 12.5px; padding: 12px 0; }
     return parts.join(" · ") || "метрик пока нет";
   }
 
+  var todayScope = "my";
+  function taskSeg() {
+    var nc = rowsT.filter(function (t) { return !t.done && isCommon(t); }).length;
+    return el("div", { "class": "seg" }, [["my", "Мои"], ["common", "Общие" + (nc ? " · " + nc : "")]].map(function (o) {
+      return el("button", { type: "button", "aria-pressed": todayScope === o[0] ? "true" : "false", text: o[1], onclick: function () { todayScope = o[0]; renderToday(); } });
+    }));
+  }
+  function renderCommon() {
+    var out = el("div");
+    out.append(taskSeg());
+    var open = rowsT.filter(function (t) { return !t.done && isCommon(t); }).sort(taskCmp);
+    var doneT = rowsT.filter(function (t) { var d = t.done && isCommon(t) ? pd(t.done) : null; return d && dd(d, TODAY) >= -7; }).sort(function (x, y) { return taskCmp(y, x); });
+    out.append(el("div", { "class": "hello" }, el("h2", { text: open.length ? open.length + " " + plural(open.length, "общая задача", "общие задачи", "общих задач") : "Общих задач нет" }), el("p", { text: "План на всю команду. Отметить выполненной может любой, один раз за всех." })));
+    if (open.length) out.append(section("В работе", open.length, limited(open.map(taskRow), 30)));
+    if (doneT.length) out.append(section("Закрыто за неделю", doneT.length, limited(doneT.map(taskRow), 8)));
+    view.replaceChildren(out);
+  }
   function renderToday() {
+    if (todayScope === "common") { renderCommon(); return; }
     var due = [], nodate = [], silent = [], debt = [];
     rowsA.filter(isMine).forEach(function (a) {
       if (a.status === "Подписан" || a.status === "Отказ") { if (a.debt) debt.push(a); return; }
@@ -830,12 +851,15 @@ nav.bar button { font-size: 12.5px; padding: 12px 0; }
     silent.sort(function (x, y) { return y.n - x.n; });
     var finds = sortByDateDesc(newFinds().filter(mineFind));
     var out = el("div");
-    var tk = openTasksDue();
+    out.append(taskSeg());
+    var tkAll = openTasksDue(), tk = tkAll.filter(function (t) { return !isCommon(t); });
+    var comm = rowsT.filter(function (t) { return !t.done && isCommon(t); }).sort(taskCmp), outg = rowsT.filter(function (t) { return !t.done && tOut(t); }).sort(taskCmp);
     var total = due.length + nodate.length + tk.length;
     out.append(el("div", { "class": "hello" },
       el("h2", null, total ? [animNum(el("span", { "class": "hero-n" }), total), plural(total, "дело", "дела", "дел") + " на сегодня"] : "На сегодня чисто"),
       el("p", { text: silent.length ? silent.length + " " + plural(silent.length, "артист молчит", "артиста молчат", "артистов молчат") + " больше недели" : "Молчунов больше недели нет" })));
-    if (tk.length) out.append(section("Задачи", tk.length, limited(tk.map(taskRow), 8)));
+    if (tk.length) out.append(section("Мои задачи", tk.length, limited(tk.map(taskRow), 8)));
+    if (outg.length) out.append(section("Поставил другим", outg.length, limited(outg.map(taskRow), 8)));
     if (due.length) out.append(section("Касания", due.length, limited(due.map(function (x) {
       var n = dd(x.when, TODAY), m = n === 0 ? "сегодня" : n === 1 ? "завтра" : n < 0 ? "просрочено " + days(-n) : "через " + days(n);
       return aItem(x.a, m, n < 0 ? "hot" : n <= 1 ? "soon" : "", x.what + " · " + x.a.status + (x.a.label ? " · " + x.a.label : ""));
@@ -1017,7 +1041,7 @@ nav.bar button { font-size: 12.5px; padding: 12px 0; }
     })));
     if (!live) out.append(el("div", { "class": "banner demo" }, el("div", { text: "Это пример: цифры слушателей придуманы, чтобы показать дизайн." })));
     else if (mine.length && !mine.some(function (a) { return MET[a.name] && MET[a.name].length; })) out.append(el("div", { "class": "banner demo" }, el("div", { text: "В Metrics пока нет цифр по этим артистам. Нужен запуск ym_sync.py." })));
-    if (!mine.length) { out.append(el("div", { "class": "empty", text: scope === "my" ? "У тебя пока нет подписанных. Посмотри «Весь ростер»." : "Подписанных пока нет." })); if (IS_WEB && ME.admin) out.append(inviteBlock()); view.replaceChildren(out); return; }
+    if (!mine.length) { out.append(el("div", { "class": "empty", text: scope === "my" ? "Тут будут твои артисты. Открой «Весь ростер», выбери артиста и нажми «Взять себе»." : "Подписанных пока нет." })); if (IS_WEB && ME.admin) out.append(inviteBlock()); view.replaceChildren(out); return; }
     var box = el("div", { "class": "rgrid" });
     mine.forEach(function (a) {
       var tile = el("button", { "class": "tile", type: "button", "aria-label": a.name, onclick: function () { openArtist(a); } });
@@ -1041,25 +1065,38 @@ nav.bar button { font-size: 12.5px; padding: 12px 0; }
     view.replaceChildren(out);
   }
 
-  // admin only: one-time link, the person who opens it first is added to the team
+  // admin only: постоянные ссылки команды. Ссылка привязывается к первому, кто её открыл; «Сбросить» освобождает её
   function inviteBlock() {
-    var box = el("div", { "class": "text" }, el("h4", { text: "Пригласить человека" }));
+    var box = el("div", { "class": "text" }, el("h4", { text: "Команда и ссылки" }));
+    var list = el("div"), msg = el("p", { "class": "hint", text: "Загружаю…" });
+    function parse(r) { var p = r && r.payload; if (typeof p === "string") { try { p = JSON.parse(p); } catch (e) {} } return p; }
+    function draw(invites) {
+      list.replaceChildren();
+      if (!invites.length) { msg.textContent = "Пока никого. Добавь первого ниже."; return; }
+      msg.textContent = "Ссылка постоянная. Первый, кто её откроет, закрепляется за именем. Сменил телефон или аккаунт: нажми «Сбросить» и отправь ссылку заново.";
+      invites.forEach(function (x) {
+        var row = el("div", { "class": "metrics" }, el("div", { "class": "small", text: x.name + " · " + (x.joined ? "внутри" : x.link ? "ещё не открывал" : "нет ссылки") }));
+        var acts = el("div", { "class": "actions" });
+        if (x.link) acts.append(copyBtn(x.link, "Скопировать ссылку"));
+        else acts.append(el("button", { "class": "btn sm", type: "button", text: "Создать ссылку", onclick: function () { make(x.name); } }));
+        if (x.joined && x.link) acts.append(el("button", { "class": "btn sm bad", type: "button", text: "Сбросить", onclick: function (e) {
+          var b = e.currentTarget; if (!b.dataset.ask) { b.dataset.ask = "1"; b.textContent = "Точно сбросить?"; setTimeout(function () { if (b.isConnected) { delete b.dataset.ask; b.textContent = "Сбросить"; } }, 3000); return; }
+          b.disabled = true; mcpH.callTool(SERVER, "reset_invite", { name: x.name }, { cache: false }).then(function () { toast("Сбросил: " + x.name); load(); }, function (err) { b.disabled = false; toast(errMsg(err), true); });
+        } }));
+        row.append(acts); list.append(row);
+      });
+    }
+    function load() { mcpH.callTool(SERVER, "list_invites", {}, { cache: false }).then(function (r) { var p = parse(r); draw(p && p.invites || []); }, function (err) { msg.textContent = errMsg(err); }); }
+    function make(nm) {
+      mcpH.callTool(SERVER, "create_invite", { name: nm }, { cache: false }).then(function (r) { var p = parse(r); if (!p || !p.link) { toast("Не вышло создать ссылку", true); return; } toast("Ссылка готова"); load(); }, function (err) { toast(errMsg(err), true); });
+    }
     var name = el("input", { "class": "search", type: "text", placeholder: "Имя, как в таблице (например Ваня)", maxlength: "40", autocomplete: "off" });
-    var res = el("div");
-    var go = el("button", { "class": "btn sm primary", type: "button", text: "Создать ссылку", onclick: function () {
+    var go = el("button", { "class": "btn sm primary", type: "button", text: "Добавить человека", onclick: function () {
       var nm = name.value.trim(); if (!nm) { toast("Напиши имя", true); return; }
-      go.disabled = true; toast("Создаю…");
-      mcpH.callTool(SERVER, "create_invite", { name: nm }, { cache: false }).then(function (r) {
-        var p = r && r.payload; if (typeof p === "string") { try { p = JSON.parse(p); } catch (e) {} }
-        go.disabled = false;
-        if (!p || !p.link) { toast("Не вышло создать ссылку", true); return; }
-        toast("Ссылка готова");
-        res.replaceChildren(el("p", { "class": "hint", text: "Одноразовая, живёт 7 дней. Отправь её " + p.name + " лично, первый, кто откроет, попадёт в команду." }),
-          el("div", { "class": "metrics" }, el("div", { "class": "small", text: p.link })),
-          el("div", { "class": "actions" }, copyBtn(p.link, "Скопировать ссылку")));
-      }, function (err) { go.disabled = false; toast(errMsg(err), true); });
+      name.value = ""; make(nm);
     } });
-    box.append(name, el("div", { "class": "actions" }, go), res);
+    box.append(msg, list, el("h4", { text: "Добавить" }), name, el("div", { "class": "actions" }, go));
+    load();
     return box;
   }
 
@@ -1090,7 +1127,24 @@ nav.bar button { font-size: 12.5px; padding: 12px 0; }
     if (a.tag) meta.append(el("span", { text: "· " + a.tag }));
     head.append(meta); out.append(head);
     var ro = !canEdit(a), sg = a.status === "Подписан";   // подписанные: только статистика и заметки
-    if (ro) out.append(el("div", { "class": "banner ok" }, el("div", { text: "Ведёт " + (a.resp || "—") + ". Карточку видно всей команде, править её может только он." })));
+    if (ro) out.append(el("div", { "class": "banner ok" }, el("div", { text: "Ведёт " + (a.resp || "—") + ". Карточку видно всей команде, править её может только он. Если артист должен быть у тебя, попроси админа передать." })));
+    // «Взять себе»: артист без ответственного или общий (ББР) закрепляется за тем, кто нажал
+    if (ME.admin) {
+      var who = el("select", { "aria-label": "Кто ведёт" }), names = ["Не закреплён"], team = ME.team && ME.team.length ? ME.team : ownersAll();
+      team.forEach(function (n) { if (!isPoolName(n) && names.indexOf(n) < 0) names.push(n); });
+      var curW = !a.resp || isPoolName(a.resp) ? "Не закреплён" : a.resp; if (names.indexOf(curW) < 0) names.push(curW);
+      names.forEach(function (n) { who.append(el("option", { value: n, text: n, selected: n === curW })); });
+      who.addEventListener("change", function () { save(TAB_A, a, [{ k: "resp", v: who.value }], who.value === "Не закреплён" ? "Артист в общем пуле" : "Теперь ведёт " + who.value); });
+      out.append(el("div", { "class": "facts" }, fact("Кто ведёт", who)));
+    } else if (!a.resp || isShared(a)) {
+      out.append(el("div", { "class": "actions" }, el("button", { "class": "btn primary", type: "button", text: "Взять себе", onclick: function (e) { e.currentTarget.disabled = true; save(TAB_A, a, [{ k: "resp", v: ME.name }], "Теперь артист у тебя, он во вкладке «Мои»"); } })));
+    } else if (a.resp && same(a.resp, ME.name) && !isShared(a)) {
+      var rel = el("button", { "class": "btn sm", type: "button", text: "Передать в общий пул", onclick: function (e) {
+        var b = e.currentTarget; if (!b.dataset.ask) { b.dataset.ask = "1"; b.textContent = "Точно передать?"; setTimeout(function () { if (b.isConnected) { delete b.dataset.ask; b.textContent = "Передать в общий пул"; } }, 3000); return; }
+        b.disabled = true; save(TAB_A, a, [{ k: "resp", v: "Не закреплён" }], "Артист передан в общий пул");
+      } });
+      out.append(el("div", { "class": "actions" }, rel));
+    }
 
     // contact buttons: the main channel from the sheet goes first and is highlighted
     var cs = contacts(a), actions = el("div", { "class": "actions" });
@@ -1255,7 +1309,12 @@ nav.bar button { font-size: 12.5px; padding: 12px 0; }
     var x = tDate(a).getTime(), y = tDate(b).getTime(); if (x !== y) return x - y;
     var p = tTime(a), q = tTime(b); if (p === q) return 0; if (!p) return -1; if (!q) return 1; return p < q ? -1 : 1;
   }
-  function openTasksDue() { return rowsT.filter(function (t) { return !t.done && dd(tDate(t), TODAY) <= 0; }).sort(taskCmp); }
+  // «Кто» = исполнитель или «Все» (общая на команду), «Поставил» = автор
+  function isCommon(t) { return same(t.who, "Все"); }
+  function tMine(t) { return same(t.who, ME.name) || (!t.who && !t.author && ME.admin); }
+  function tOut(t) { return same(t.author, ME.name) && !tMine(t) && !isCommon(t); }   // поставил другому
+  function tVisible(t) { return tMine(t) || isCommon(t) || tOut(t); }
+  function openTasksDue() { return rowsT.filter(function (t) { return !t.done && (tMine(t) || isCommon(t)) && dd(tDate(t), TODAY) <= 0; }).sort(taskCmp); }
   function nowStamp() { var d = new Date(); return fmtFull(d) + " " + two(d.getHours()) + ":" + two(d.getMinutes()); }
   function checkSvg() { var s = svg("svg", { viewBox: "0 0 24 24", "class": "ckw", "aria-hidden": "true" }); s.append(svg("path", { "class": "ck", pathLength: "1", d: "M5.5 12.5l4.2 4.2L18.5 7.5" })); return s; }
   function toggleTask(t, btn) {
@@ -1263,7 +1322,7 @@ nav.bar button { font-size: 12.5px; padding: 12px 0; }
     btn.classList.toggle("on", nowDone); btn.setAttribute("aria-pressed", nowDone ? "true" : "false");
     var row = btn.closest(".task"); if (row) row.classList.toggle("done", nowDone);
     if (nowDone) burst();
-    save(TAB_T, t, [{ k: "done", v: nowDone ? nowStamp() : "" }], nowDone ? "Готово" : "Вернул в работу", false);
+    save(TAB_T, t, [{ k: "done", v: nowDone ? nowStamp() + (isCommon(t) ? " · " + ME.name : "") : "" }], nowDone ? "Готово" : "Вернул в работу", false);
   }
   function shiftTask(t) {
     var d = tDate(t), target = dd(d, TODAY) < 0 ? TODAY : addDays(d, 1);
@@ -1286,7 +1345,7 @@ nav.bar button { font-size: 12.5px; padding: 12px 0; }
   }
   function addTask(rec) {
     toast("Добавляю…");
-    var t = { row: 0, id: "t" + Date.now().toString(36), text: rec.text, date: rec.date, time: rec.time, artist: rec.artist, done: "", created: nowStamp(), who: ME.name };
+    var t = { row: 0, id: "t" + Date.now().toString(36), text: rec.text, date: rec.date, time: rec.time, artist: rec.artist, done: "", created: nowStamp(), who: rec.to || ME.name, author: ME.name };
     function done() { rowsT.push(t); updateCounts(); toast(live ? "Задача добавлена" : "Пример: в таблицу не пишу"); route(); }
     if (!live) { done(); return; }
     if (colT.id < 0 || colT.text < 0) { toast("На вкладке «Задачи» нет колонок ID и «Задача»", true); return; }
@@ -1303,13 +1362,18 @@ nav.bar button { font-size: 12.5px; padding: 12px 0; }
     var done = !!t.done, tm = tTime(t), art = t.artist ? artistNames()[key(t.artist)] : null;
     var chk = el("button", { "class": "chk" + (done ? " on" : ""), type: "button", "aria-pressed": done ? "true" : "false", "aria-label": "Выполнено", onclick: function (e) { toggleTask(t, e.currentTarget); } }, checkSvg());
     var meta = el("div", { "class": "tm" }, el("span", { "class": tm ? "tag-time" : "tag-all", text: tm || "весь день" }));
-    var diff = dd(tDate(t), TODAY);
-    if (diff !== 0) meta.append(el("span", { "class": diff < 0 ? "late" : "", text: diff < 0 ? "просрочено " + days(-diff) : fmtShort(tDate(t)) }));
+    var diff = dd(tDate(t), TODAY), own = !isCommon(t) && !tMine(t) ? false : true;
+    if (isCommon(t)) meta.append(el("span", { "class": "tag-all", text: "общая" }));
+    else if (tOut(t)) meta.append(el("span", { "class": "tag-all", text: "для " + t.who }));
+    else if (t.author && !same(t.author, ME.name)) meta.append(el("span", { "class": "tag-all", text: "от " + t.author }));
+    if (done && isCommon(t)) { var cl = String(t.done).split(" · ")[1]; if (cl) meta.append(el("span", { text: "закрыл " + cl })); }
+    if (!done && diff !== 0) meta.append(el("span", { "class": diff < 0 ? "late" : "", text: diff < 0 ? "просрочено " + days(-diff) : fmtShort(tDate(t)) }));
+    var canEdit = ME.admin || tMine(t) || same(t.author, ME.name);
     if (art) meta.append(el("button", { "class": "tag-art", type: "button", text: t.artist, onclick: function () { openArtist(art); } }));
     else if (t.artist) meta.append(el("span", { text: t.artist }));
     var acts = el("div", { "class": "tact" });
-    if (!done) acts.append(el("button", { "class": "mini", type: "button", text: diff < 0 ? "на сегодня" : "+1 день", onclick: function () { shiftTask(t); } }));
-    acts.append(el("button", { "class": "mini x", type: "button", "aria-label": "Удалить задачу", text: "×", onclick: function (e) {
+    if (!done && canEdit) acts.append(el("button", { "class": "mini", type: "button", text: diff < 0 ? "на сегодня" : "+1 день", onclick: function () { shiftTask(t); } }));
+    if (canEdit) acts.append(el("button", { "class": "mini x", type: "button", "aria-label": "Удалить задачу", text: "×", onclick: function (e) {
       var b = e.currentTarget;
       if (b.dataset.ask) { removeTask(t); return; }
       b.dataset.ask = "1"; b.textContent = "Удалить?";
@@ -1318,7 +1382,7 @@ nav.bar button { font-size: 12.5px; padding: 12px 0; }
     return el("div", { "class": "task" + (done ? " done" : "") }, chk, el("div", { "class": "tb" }, el("div", { "class": "tt", text: t.text }), meta), acts);
   }
 
-  var tf = { text: "", iso: toIso(TODAY), allDay: true, time: "12:00", artist: "" };
+  var tf = { text: "", iso: toIso(TODAY), allDay: true, time: "12:00", artist: "", to: "" };
   function renderTasks() {
     var out = el("div");
     var text = el("input", { "class": "search", type: "text", placeholder: "Что нужно сделать?", value: tf.text, autocomplete: "off", maxlength: "200" });
@@ -1343,6 +1407,15 @@ nav.bar button { font-size: 12.5px; padding: 12px 0; }
         el("button", { type: "button", "aria-pressed": tf.allDay ? "false" : "true", text: "Ко времени", onclick: function () { tf.allDay = false; drawSeg(); } }));
       timeIn.hidden = tf.allDay;
     }
+    var toBox = el("select", { "class": "mini-in wide", "aria-label": "Кому" });
+    function drawTo() {
+      toBox.replaceChildren();
+      var opts = [[ME.name, "Мне"], ["Все", "Вся команда (общая задача)"]], team = ME.team && ME.team.length ? ME.team : ownersAll();
+      team.forEach(function (n) { if (!same(n, ME.name) && !opts.some(function (o) { return same(o[0], n); })) opts.push([n, n]); });
+      if (!tf.to) tf.to = ME.name;
+      opts.forEach(function (o) { toBox.append(el("option", { value: o[0], text: o[1], selected: same(tf.to, o[0]) })); });
+    }
+    toBox.addEventListener("change", function () { tf.to = toBox.value; });
     var dl = el("datalist", { id: "artlist" });
     rowsA.slice().sort(function (a, b) { return a.name.localeCompare(b.name, "ru"); }).forEach(function (a) { dl.append(el("option", { value: a.name })); });
     var artIn = el("input", { "class": "mini-in wide", type: "text", list: "artlist", placeholder: "Артист (необязательно)", value: tf.artist, autocomplete: "off" });
@@ -1351,22 +1424,23 @@ nav.bar button { font-size: 12.5px; padding: 12px 0; }
       var v = tf.text.trim();
       if (!v) { toast("Напиши, что нужно сделать", true); text.focus(); return; }
       if (!tf.allDay && !tf.time) { toast("Укажи время или выбери «Весь день»", true); return; }
-      var rec = { text: v, date: fromIso(tf.iso), time: tf.allDay ? "" : tf.time, artist: tf.artist.trim() };
+      var rec = { text: v, date: fromIso(tf.iso), time: tf.allDay ? "" : tf.time, artist: tf.artist.trim(), to: tf.to || ME.name };
       tf.text = ""; tf.artist = "";
       addTask(rec);
     }
     text.addEventListener("keydown", function (e) { if (e.key === "Enter") submit(); });
-    drawDate(); drawSeg();
+    drawDate(); drawSeg(); drawTo();
     out.append(el("div", { "class": "tform" }, text,
+      el("div", { "class": "line" }, el("span", { "class": "hint", text: "Кому:" }), toBox),
       el("div", { "class": "line" }, chips, dateIn),
       el("div", { "class": "line" }, seg, timeIn),
       el("div", { "class": "line" }, artIn, dl, el("button", { "class": "btn primary", type: "button", text: "Добавить", onclick: submit }))));
 
-    var open = rowsT.filter(function (t) { return !t.done; }).sort(taskCmp);
+    var vis = rowsT.filter(tVisible), open = vis.filter(function (t) { return !t.done; }).sort(taskCmp);
     var overdue = open.filter(function (t) { return dd(tDate(t), TODAY) < 0; });
     var today = open.filter(function (t) { return dd(tDate(t), TODAY) === 0; });
     var later = open.filter(function (t) { return dd(tDate(t), TODAY) > 0; });
-    var doneToday = rowsT.filter(function (t) { var d = t.done ? pd(t.done) : null; return d && dd(d, TODAY) === 0; }).sort(taskCmp);
+    var doneToday = vis.filter(function (t) { var d = t.done ? pd(t.done) : null; return d && dd(d, TODAY) === 0; }).sort(taskCmp);
     var all = today.length + doneToday.length;
     if (overdue.length) {
       var sec = section("Просрочено", overdue.length, limited(overdue.map(taskRow), 10));
@@ -1382,7 +1456,7 @@ nav.bar button { font-size: 12.5px; padding: 12px 0; }
     out.append(tsec);
     if (later.length) out.append(section("Дальше", later.length, limited(later.map(taskRow), 8)));
     if (doneToday.length) out.append(section("Выполнено сегодня", doneToday.length, limited(doneToday.map(taskRow), 8)));
-    if (!rowsT.length) out.append(el("p", { "class": "hint", text: "Пока ни одной задачи. Добавь первую выше." }));
+    if (!vis.length) out.append(el("p", { "class": "hint", text: "Пока ни одной задачи. Добавь первую выше." }));
     view.replaceChildren(out);
   }
 
@@ -1553,6 +1627,7 @@ nav.bar button { font-size: 12.5px; padding: 12px 0; }
   document.querySelectorAll("nav.bar button").forEach(function (b) { b.addEventListener("click", function () { location.hash = b.getAttribute("data-tab"); }); });
   window.addEventListener("hashchange", function () { route(); if (!/^(artist|find)-/.test(location.hash.slice(1))) window.scrollTo(0, 0); });
   document.getElementById("refresh").addEventListener("click", load);
+  (function () { var hd = document.querySelector("header.top"); function chk() { hd.classList.toggle("stuck", window.scrollY > 4); } window.addEventListener("scroll", chk, { passive: true }); chk(); })();
   document.getElementById("datestr").textContent = longDate(TODAY);
   route();
   load();
