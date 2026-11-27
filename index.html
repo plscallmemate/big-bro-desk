@@ -1700,6 +1700,20 @@ nav.bar button { font-size: 12.5px; padding: 12px 0; }
   document.querySelectorAll("nav.bar button").forEach(function (b) { b.addEventListener("click", function () { location.hash = b.getAttribute("data-tab"); }); });
   window.addEventListener("hashchange", function () { route(); if (!/^(artist|find)-/.test(location.hash.slice(1))) window.scrollTo(0, 0); });
   document.getElementById("refresh").addEventListener("click", load);
+  // свайп вправо от левого края = «← К списку» (как на iOS). Работает, только если на экране есть кнопка «назад».
+  (function () {
+    var sx = 0, sy = 0, t0 = 0, on = false;
+    document.addEventListener("touchstart", function (e) {
+      var t = e.touches[0]; on = e.touches.length === 1 && t.clientX < 48 && !!document.querySelector(".back");
+      sx = t.clientX; sy = t.clientY; t0 = Date.now();
+    }, { passive: true });
+    document.addEventListener("touchend", function (e) {
+      if (!on) return; on = false;
+      var t = e.changedTouches[0], dx = t.clientX - sx, dy = Math.abs(t.clientY - sy);
+      if (dx > 70 && dy < dx * 0.6 && Date.now() - t0 < 700) { var b = document.querySelector(".back"); if (b) b.click(); }
+    }, { passive: true });
+    document.addEventListener("touchcancel", function () { on = false; }, { passive: true });
+  })();
   (function () { var hd = document.querySelector("header.top"); function chk() { hd.classList.toggle("stuck", window.scrollY > 4); } window.addEventListener("scroll", chk, { passive: true }); chk(); })();
   document.getElementById("datestr").textContent = longDate(TODAY);
   route();
