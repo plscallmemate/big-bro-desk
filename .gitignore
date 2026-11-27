@@ -11,3 +11,12 @@ __pycache__/
 # только локально: бэкенд Apps Script и рабочие заметки (там ID таблицы)
 big-bro-collector.gs
 HANDOFF.md
+
+# чаты телеги: сессия = ключ к аккаунту, кэш участников групп, окружение питона
+*.session
+*.session-journal
+tg_watch_cache.json
+.venv/
+
+# настройки Claude Code
+.claude/
