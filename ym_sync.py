@@ -228,9 +228,10 @@ def main():
     print("Отправляю в таблицу…")
     out = {}
     CH = 40   # маленькими пачками: большой пост через VPN чаще рвётся
-    for i in range(0, len(briefs), CH):
-        part = briefs[i:i + CH]
-        print("  пачка %d–%d из %d" % (i + 1, i + len(part), len(briefs)))
+    items = list(briefs.items())
+    for i in range(0, len(items), CH):
+        part = dict(items[i:i + CH])
+        print("  пачка %d–%d из %d" % (i + 1, i + len(part), len(items)))
         out = webapp(cfg, body={"secret": cfg["secret"], "briefs": part})
         if out.get("log"):
             print(out["log"])

@@ -1,0 +1,13 @@
+# секреты: webapp_url и secret для синхронизации, в публичный репо нельзя
+config.json
+
+# мусор и временное
+.DS_Store
+*.zip
+*.log
+__pycache__/
+команда.rtf
+
+# только локально: бэкенд Apps Script и рабочие заметки (там ID таблицы)
+big-bro-collector.gs
+HANDOFF.md
